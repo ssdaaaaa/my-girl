@@ -63,18 +63,18 @@
     .dot { width:10px; height:10px; border-radius:50%; background:#bbb; display:inline-block; margin-right:6px; }
     .dot.on { background:#18aa60; }
     .dot.warn-dot { background:#e6a100; }
-    .chat-box { height:54vh; min-height:380px; overflow:auto; padding:6px 2px 10px; scroll-behavior:smooth; }
-    .bubble-row { display:flex; margin:10px 0; gap:8px; }
+    .chat-box { height:54vh; min-height:380px; overflow:auto; padding:6px 2px 12px; scroll-behavior:smooth; }
+    .bubble-row { display:flex; margin:9px 0; gap:8px; }
     .bubble-row.user,.bubble-row.me { justify-content:flex-end; }
     .bubble-row.assistant,.bubble-row.ta { justify-content:flex-start; }
-    .bubble-row > div { max-width:82%; width:auto; display:flex; flex-direction:column; }
+    .bubble-row > div { max-width:78%; width:auto; display:flex; flex-direction:column; }
     .bubble-row.user > div,.bubble-row.me > div { align-items:flex-end; }
     .bubble-row.assistant > div,.bubble-row.ta > div { align-items:flex-start; }
-    .bubble { display:inline-block; width:-moz-fit-content; width:fit-content; max-width:min(100%, 330px); padding:9px 12px; border-radius:18px; font-size:14px; line-height:1.5; white-space:pre-wrap; word-break:break-word; box-shadow:0 8px 20px rgba(0,0,0,.04); }
+    .bubble { display:block; width:auto; min-width:0; min-height:0; max-width:100%; padding:9px 13px; border-radius:18px; font-size:14px; line-height:1.55; text-align:left; white-space:pre-wrap; word-break:break-word; overflow-wrap:anywhere; box-shadow:0 8px 20px rgba(0,0,0,.04); }
     .bubble.user,.bubble.me { background:linear-gradient(135deg,var(--primary),#ff9dbc); color:white; border-bottom-right-radius:6px; }
     .bubble.assistant,.bubble.ta { background:white; color:var(--text); border:1px solid var(--line); border-bottom-left-radius:6px; }
     .meta { font-size:11px; color:var(--muted); margin-top:3px; }
-    .msg-img { max-width:100%; border-radius:14px; margin-top:8px; border:1px solid var(--line); }
+    .msg-img { max-width:100%; border-radius:14px; margin-top:8px; border:1px solid var(--line); display:block; }
     .composer { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end; }
     .ai-composer { grid-template-columns:1fr auto auto; }
     .attach-icon { width:48px; min-width:48px; padding:12px 0; font-size:18px; }
@@ -114,7 +114,25 @@
     .msg-attachments { display:grid; gap:8px; margin-top:8px; }
     .msg-file { border:1px solid rgba(255,255,255,.45); background:rgba(255,255,255,.18); border-radius:13px; padding:8px 9px; font-size:12px; }
     .bubble.assistant .msg-file, .bubble.ta .msg-file { border-color:var(--line); background:var(--soft); color:var(--text); }
-    @media (max-width:390px){ .app{padding-left:12px;padding-right:12px} .grid2{grid-template-columns:1fr} .brand h1{font-size:18px} .chip{display:none} .ai-upload-toolbar{grid-template-columns:1fr 1fr} .ai-upload-toolbar .ghost{grid-column:1/3} }
+
+    .duo-card { display:flex; flex-direction:column; min-height:calc(100vh - 260px); }
+    .duo-card .chat-box { flex:1; height:52vh !important; min-height:330px !important; }
+    .duo-composer-wrap { position:sticky; bottom:0; z-index:5; margin-top:10px; padding-top:8px; background:linear-gradient(180deg,rgba(255,255,255,0),var(--card) 24%); }
+    .duo-composer { display:grid; grid-template-columns:46px 1fr auto; gap:8px; align-items:end; }
+    .plus-btn { width:46px; min-width:46px; height:46px; padding:0; border-radius:50%; font-size:25px; line-height:1; }
+    .duo-composer textarea { min-height:46px; max-height:120px; border-radius:22px; padding:12px 14px; }
+    .duo-composer .btn { min-height:46px; border-radius:22px; padding:0 15px; }
+    .plus-panel { display:none; margin:0 0 10px; padding:12px; border:1px solid var(--line); border-radius:20px; background:rgba(255,255,255,.88); box-shadow:0 10px 24px rgba(233,79,132,.10); }
+    .plus-panel.show { display:block; animation:fade .2s ease; }
+    .plus-actions { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .plus-action { min-height:54px; padding:9px 6px; border-radius:18px; font-size:12px; font-weight:950; }
+    .plus-task-form { display:none; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
+    .plus-task-form.show { display:block; }
+    .duo-preview { display:none; margin:0 0 10px; padding:10px; border:1px dashed var(--line); border-radius:18px; background:rgba(255,255,255,.78); }
+    .duo-preview.show { display:block; }
+    .duo-preview img { max-width:140px; max-height:110px; object-fit:cover; border-radius:14px; border:1px solid var(--line); display:block; margin-top:8px; }
+    .task-card { margin-top:14px; }
+    @media (max-width:390px){ .app{padding-left:12px;padding-right:12px} .grid2{grid-template-columns:1fr} .brand h1{font-size:18px} .chip{display:none} .ai-upload-toolbar{grid-template-columns:1fr 1fr} .ai-upload-toolbar .ghost{grid-column:1/3} .plus-actions{grid-template-columns:repeat(3,1fr)} .duo-composer{grid-template-columns:42px 1fr auto} .plus-btn{width:42px;min-width:42px;height:42px} }
   </style>
 </head>
 <body>
@@ -171,30 +189,46 @@
           </div>
         </div>
 
-        <div class="card">
+        <div class="card duo-card">
           <h3>聊天记录</h3>
-          <div class="chat-box" id="duoChatBox" style="height:36vh; min-height:260px;"></div>
-          <label>文字内容</label>
-          <textarea id="duoText" placeholder="写点想说的话、报备、撒娇、任务反馈都可以～"></textarea>
-          <label>提交图片</label>
-          <input id="duoImage" type="file" accept="image/*" onchange="previewImage(event)" />
-          <img id="duoPreview" class="file-preview" alt="图片预览" />
-          <div class="btn-row">
-            <button class="btn" onclick="sendDuoMessage()">提交文字/图片</button>
-            <button class="btn ghost" onclick="clearDuoChat()">清空聊天</button>
+          <div class="chat-box" id="duoChatBox"></div>
+          <div class="duo-composer-wrap">
+            <div class="duo-preview" id="duoImagePreviewBox">
+              <div class="small">已选择图片，点击发送会和文字一起提交。</div>
+              <img id="duoPreview" alt="图片预览" />
+            </div>
+            <div class="plus-panel" id="duoPlusPanel">
+              <div class="plus-actions">
+                <label class="btn secondary plus-action">🖼️<br>提交图片
+                  <input id="duoImage" class="file-input" type="file" accept="image/*" onchange="previewImage(event)" />
+                </label>
+                <button class="btn secondary plus-action" type="button" onclick="toggleTaskPanel()">✅<br>发布任务</button>
+                <button class="btn ghost plus-action" type="button" onclick="clearDuoChat()">🧹<br>清空聊天</button>
+              </div>
+              <div class="plus-task-form" id="plusTaskForm">
+                <label>任务标题</label>
+                <input id="taskTitle" placeholder="例如：买红糖姜茶 / 拍照报备 / 晚上视频" />
+                <label>任务说明</label>
+                <textarea id="taskDesc" placeholder="写清楚怎么做、截止时间、要提交什么图片或文字～"></textarea>
+                <label>截止日期</label>
+                <input id="taskDue" type="date" />
+                <div class="btn-row">
+                  <button class="btn" onclick="addTask()">发布任务</button>
+                  <button class="btn ghost" type="button" onclick="toggleTaskPanel(false)">收起</button>
+                </div>
+              </div>
+            </div>
+            <div class="duo-composer">
+              <button class="btn secondary plus-btn" type="button" onclick="togglePlusPanel()">+</button>
+              <textarea id="duoText" placeholder="写点想说的话～" rows="1"></textarea>
+              <button class="btn" onclick="sendDuoMessage()">发送</button>
+            </div>
           </div>
         </div>
 
-        <div class="card">
-          <h3>发布任务</h3>
-          <label>任务标题</label>
-          <input id="taskTitle" placeholder="例如：买红糖姜茶 / 拍照报备 / 晚上视频" />
-          <label>任务说明</label>
-          <textarea id="taskDesc" placeholder="写清楚怎么做、截止时间、要提交什么图片或文字～"></textarea>
-          <label>截止日期</label>
-          <input id="taskDue" type="date" />
-          <div class="btn-row">
-            <button class="btn" onclick="addTask()">发布任务</button>
+        <div class="card task-card">
+          <h3>任务列表</h3>
+          <div class="btn-row" style="margin-top:0; margin-bottom:10px;">
             <button class="btn ghost" onclick="clearDoneTasks()">清理已完成</button>
           </div>
           <div id="taskList"></div>
@@ -712,11 +746,29 @@
       box.scrollTop = box.scrollHeight;
     }
 
+    function togglePlusPanel(force) {
+      const panel = document.getElementById('duoPlusPanel');
+      if (!panel) return;
+      const show = typeof force === 'boolean' ? force : !panel.classList.contains('show');
+      panel.classList.toggle('show', show);
+      if (!show) toggleTaskPanel(false);
+    }
+
+    function toggleTaskPanel(force) {
+      const form = document.getElementById('plusTaskForm');
+      if (!form) return;
+      const show = typeof force === 'boolean' ? force : !form.classList.contains('show');
+      form.classList.toggle('show', show);
+      if (show) togglePlusPanel(true);
+    }
+
     async function previewImage(event) {
       const file = event.target.files?.[0];
       const preview = document.getElementById('duoPreview');
+      const box = document.getElementById('duoImagePreviewBox');
       pendingImageData = '';
-      preview.style.display = 'none';
+      if (preview) preview.removeAttribute('src');
+      if (box) box.classList.remove('show');
       if (!file) return;
       if (!file.type.startsWith('image/')) return showToast('请选择图片文件');
       try {
@@ -727,7 +779,8 @@
           return showToast('图片还是太大，换一张小一点的图，避免云端保存失败');
         }
         preview.src = pendingImageData;
-        preview.style.display = 'block';
+        if (box) box.classList.add('show');
+        togglePlusPanel(false);
       } catch (err) {
         showToast('图片读取失败：' + err.message);
       }
@@ -778,7 +831,9 @@
         textEl.value = '';
         autoSizeTextarea(textEl);
         document.getElementById('duoImage').value = '';
-        document.getElementById('duoPreview').style.display = 'none';
+        document.getElementById('duoPreview').removeAttribute('src');
+        const previewBox = document.getElementById('duoImagePreviewBox');
+        if (previewBox) previewBox.classList.remove('show');
         pendingImageData = '';
         showToast(liveReady() ? '已发送' : '已保存，正在尝试进入暗号房间');
       } catch (err) {
@@ -815,6 +870,8 @@
         document.getElementById('taskTitle').value = '';
         document.getElementById('taskDesc').value = '';
         document.getElementById('taskDue').value = '';
+        toggleTaskPanel(false);
+        togglePlusPanel(false);
         showToast(liveReady() ? '任务已发布' : '任务已保存，正在尝试进入暗号房间');
       } catch (err) {
         showToast('发布失败：' + err.message);
