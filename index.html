@@ -73,6 +73,11 @@
     .meta { font-size:11px; color:var(--muted); margin-top:3px; }
     .msg-img { max-width:100%; border-radius:14px; margin-top:8px; border:1px solid var(--line); }
     .composer { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end; }
+    .ai-composer { grid-template-columns:1fr auto auto; }
+    .attach-icon { width:48px; min-width:48px; padding:12px 0; font-size:18px; }
+    .ai-upload-toolbar { display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:center; margin:0 0 10px; }
+    .upload-card { border:1px dashed var(--line); background:rgba(255,255,255,.84); color:var(--primary-dark); border-radius:18px; padding:12px 10px; text-align:center; font-weight:950; cursor:pointer; box-shadow:none; min-height:46px; display:flex; align-items:center; justify-content:center; }
+    .upload-card:hover,.attach-icon:hover { border-color:var(--primary); box-shadow:0 0 0 4px rgba(255,111,159,.10); }
     .file-preview { display:none; max-width:100%; border-radius:18px; margin-top:10px; border:1px solid var(--line); }
     .task { display:grid; gap:8px; padding:12px; border-radius:20px; border:1px solid var(--line); background:rgba(255,255,255,.72); margin-top:10px; }
     .task-head { display:flex; justify-content:space-between; gap:8px; align-items:flex-start; }
@@ -94,7 +99,19 @@
     .nav-btn.active { background:var(--soft); color:var(--primary-dark); }
     .toast { position:fixed; left:50%; bottom:92px; transform:translateX(-50%) translateY(10px); background:rgba(51,37,43,.92); color:white; padding:10px 14px; border-radius:999px; opacity:0; pointer-events:none; transition:.2s; font-size:13px; z-index:20; max-width:min(420px,calc(100% - 32px)); text-align:center; }
     .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-    @media (max-width:390px){ .app{padding-left:12px;padding-right:12px} .grid2{grid-template-columns:1fr} .brand h1{font-size:18px} .chip{display:none} }
+
+    .file-input { display:none; }
+    .attachment-preview { display:none; margin-top:10px; padding:10px; border:1px dashed var(--line); border-radius:18px; background:rgba(255,255,255,.72); }
+    .attachment-preview.show { display:block; }
+    .attachment-list { display:grid; gap:8px; margin-top:8px; }
+    .attachment-chip { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 10px; border:1px solid var(--line); border-radius:15px; background:white; font-size:12px; color:var(--muted); }
+    .attachment-chip b { color:var(--text); font-size:13px; }
+    .attachment-thumb { max-width:150px; max-height:110px; object-fit:cover; border-radius:14px; border:1px solid var(--line); margin-top:8px; display:block; }
+    .file-btn { display:inline-flex; align-items:center; justify-content:center; }
+    .msg-attachments { display:grid; gap:8px; margin-top:8px; }
+    .msg-file { border:1px solid rgba(255,255,255,.45); background:rgba(255,255,255,.18); border-radius:13px; padding:8px 9px; font-size:12px; }
+    .bubble.assistant .msg-file, .bubble.ta .msg-file { border-color:var(--line); background:var(--soft); color:var(--text); }
+    @media (max-width:390px){ .app{padding-left:12px;padding-right:12px} .grid2{grid-template-columns:1fr} .brand h1{font-size:18px} .chip{display:none} .ai-upload-toolbar{grid-template-columns:1fr 1fr} .ai-upload-toolbar .ghost{grid-column:1/3} }
   </style>
 </head>
 <body>
@@ -104,7 +121,7 @@
         <div class="avatar">💗</div>
         <div>
           <h1 id="appTitle">宝贝小窝</h1>
-          <p id="appSubtitle">AI 对话 · 双人任务 · 姨妈提醒</p>
+          <p id="appSubtitle">AI 对话 · 双人任务 · 姨妈提醒 · v6 直连密钥版</p>
         </div>
       </div>
       <div class="chip" id="todayChip">今天</div>
@@ -113,15 +130,29 @@
     <main>
       <section class="page active" id="page-ai">
         <div class="card">
-          <h2>🤖 DeepSeek 对话</h2>
-          <p class="hint">这一页只调用你的后端代理，不在页面里保存或显示 sk 密钥。请先在“设置”里填写代理地址。</p>
+          <h2>🤖 DeepSeek 对话 · 可上传图片/文件</h2>
+          <p class="hint">这一页已改成前端直连 DeepSeek。请在 index.html 代码顶部填写 DEEPSEEK_API_KEY，不在设置页面显示 sk。</p>
         </div>
         <div class="card">
           <div class="chat-box" id="aiChatBox"></div>
-          <div class="composer">
-            <textarea id="aiInput" placeholder="想和 DeepSeek 说什么？" rows="1"></textarea>
+          <div class="ai-upload-toolbar" aria-label="DeepSeek 附件上传">
+            <label class="upload-card">🖼️ 上传图片
+              <input class="file-input ai-file-input" id="aiImageFiles" type="file" multiple accept="image/*" onchange="handleAIFiles(event)" />
+            </label>
+            <label class="upload-card">📄 上传文件
+              <input class="file-input ai-file-input" id="aiDocFiles" type="file" multiple accept=".txt,.md,.markdown,.json,.csv,.log,.html,.css,.js,.ts,.jsx,.tsx,.py,.java,.cpp,.c,.go,.rs,.xml,.yaml,.yml,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" onchange="handleAIFiles(event)" />
+            </label>
+            <button class="btn ghost" type="button" onclick="clearAIAttachments()">移除附件</button>
+          </div>
+          <div class="composer ai-composer">
+            <textarea id="aiInput" placeholder="想和 DeepSeek 说什么？先点上面的上传按钮选图片/文件，再点发送～" rows="1"></textarea>
+            <label class="btn secondary attach-icon" title="选择图片或文件">📎
+              <input class="file-input ai-file-input" id="aiFiles" type="file" multiple accept="image/*,.txt,.md,.markdown,.json,.csv,.log,.html,.css,.js,.ts,.jsx,.tsx,.py,.java,.cpp,.c,.go,.rs,.xml,.yaml,.yml,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" onchange="handleAIFiles(event)" />
+            </label>
             <button class="btn" id="aiSendBtn" onclick="sendAIMessage()">发送</button>
           </div>
+          <div class="attachment-preview" id="aiAttachmentPreview"></div>
+          <p class="hint">选中的附件会先显示在这里；文字/代码/CSV/JSON 会读取内容后发送，图片会压缩后一起发送。PDF/Word/Excel/PPT 暂不能纯前端直接解析，会提示你改用截图或复制文字。</p>
           <div class="btn-row">
             <button class="btn secondary" onclick="quickAI('帮我写一句温柔的晚安消息')">晚安文案</button>
             <button class="btn secondary" onclick="quickAI('今天有点累，哄哄我')">哄哄我</button>
@@ -233,16 +264,17 @@
 
           <div class="divider"></div>
           <h3>DeepSeek</h3>
-          <label>安全代理地址</label>
-          <input id="setProxyUrl" placeholder="例如：https://your-worker.workers.dev/chat" />
+          <div class="warn">当前版本是“代码内置密钥模式”：设置页不显示 sk。打开 index.html，搜索 <b>DEEPSEEK_API_KEY</b>，把引号里的内容改成你的 sk 密钥即可。</div>
           <label>模型</label>
           <select id="setModel">
             <option value="deepseek-v4-flash">deepseek-v4-flash（更快）</option>
             <option value="deepseek-v4-pro">deepseek-v4-pro（更强）</option>
+            <option value="deepseek-chat">deepseek-chat（官方常用名）</option>
+            <option value="deepseek-reasoner">deepseek-reasoner（推理模型）</option>
           </select>
           <label>AI 系统提示词</label>
           <textarea id="setPrompt" rows="4"></textarea>
-          <div class="warn">sk 密钥不放在页面上。把 DeepSeek API Key 配到 Cloudflare Worker/Vercel Function 的环境变量里，网页只填写代理地址。</div>
+          <div class="danger">注意：密钥写进 index.html 后，任何访问网页的人都可能从源码里看到它。只建议你自己测试或私人仓库使用。</div>
 
           <div class="divider"></div>
           <h3>双人同步</h3>
@@ -284,7 +316,15 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    const STORAGE_KEY = 'my_girl_v3_state';
+    const STORAGE_KEY = 'my_girl_v6_state';
+
+    // ===== DeepSeek 密钥填写位置 =====
+    // 把下面引号里的内容换成你的 sk- 开头密钥。
+    // 例如：const DEEPSEEK_API_KEY = 'sk-f1ce9072b5694a0b8b15b1124238ae41';
+    // 警告：写在前端文件里会暴露密钥，公开网页不要这样做。
+    const DEEPSEEK_API_KEY = 'sk-f1ce9072b5694a0b8b15b1124238ae41';
+    const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
+
     const FIREBASE_VERSION = '10.12.5';
     const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -301,7 +341,7 @@
         myRole: 'me'
       },
       aiMessages: [
-        { role: 'assistant', content: '嗨～我已经在这里啦。这个页面不会保存 sk 密钥，请先在设置里填写 DeepSeek 代理地址。' }
+        { role: 'assistant', content: '嗨～我已经在这里啦。这个版本的 sk 密钥写在 index.html 代码顶部，不会在设置页显示。' }
       ],
       duoMessages: [],
       duoTasks: [],
@@ -316,6 +356,7 @@
 
     let state = loadState();
     let pendingImageData = '';
+    let pendingAIAttachments = [];
     let toastTimer = null;
     let firestoreReady = false;
     let firestoreConnecting = false;
@@ -325,7 +366,7 @@
     function loadState() {
       try {
         const legacy = JSON.parse(localStorage.getItem('my_girl_v2_state') || 'null');
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || legacy;
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || JSON.parse(localStorage.getItem('my_girl_v5_state') || 'null') || JSON.parse(localStorage.getItem('my_girl_v4_state') || 'null') || JSON.parse(localStorage.getItem('my_girl_v3_state') || 'null') || legacy;
         const merged = saved ? deepMerge(structuredClone(defaultState), saved) : structuredClone(defaultState);
         delete merged.settings.deepseekApiKey;
         delete merged.settings.apiBaseUrl;
@@ -413,29 +454,160 @@
 
     function renderAIChat() {
       const box = document.getElementById('aiChatBox');
-      box.innerHTML = state.aiMessages.map(msg => `
-        <div class="bubble-row ${msg.role === 'user' ? 'user' : 'assistant'}">
+      box.innerHTML = state.aiMessages.map(msg => {
+        const side = msg.role === 'user' ? 'user' : 'assistant';
+        const meta = msg.role === 'user' ? escapeHtml(state.settings.nickname) : 'DeepSeek';
+        const attachments = Array.isArray(msg.attachments) ? msg.attachments : [];
+        const attachmentHtml = attachments.length ? `<div class="msg-attachments">${attachments.map(att => {
+          if (att.kind === 'image' && att.dataUrl) return `<img class="msg-img" src="${att.dataUrl}" alt="${escapeHtml(att.name || 'image')}" />`;
+          return `<div class="msg-file">📎 ${escapeHtml(att.name || '文件')}${att.size ? ` · ${formatFileSize(att.size)}` : ''}</div>`;
+        }).join('')}</div>` : '';
+        return `
+        <div class="bubble-row ${side}">
           <div>
-            <div class="bubble ${msg.role === 'user' ? 'user' : 'assistant'}">${escapeHtml(msg.content)}</div>
-            <div class="meta">${msg.role === 'user' ? escapeHtml(state.settings.nickname) : 'DeepSeek'}</div>
+            <div class="bubble ${side}">${escapeHtml(msg.content)}${attachmentHtml}</div>
+            <div class="meta">${meta}</div>
           </div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
       box.scrollTop = box.scrollHeight;
     }
 
     function quickAI(text) { document.getElementById('aiInput').value = text; sendAIMessage(); }
 
+    async function handleAIFiles(event) {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+      for (const file of files) {
+        if (pendingAIAttachments.length >= 6) {
+          showToast('一次最多上传 6 个附件');
+          break;
+        }
+        try {
+          if (file.type.startsWith('image/')) {
+            const dataUrl = await compressImage(file, 1280, 0.78);
+            pendingAIAttachments.push({ kind: 'image', name: file.name, type: file.type, size: file.size, dataUrl });
+          } else if (isReadableTextFile(file)) {
+            if (file.size > 1024 * 1024) showToast(`${file.name} 较大，只会读取前面一部分内容`);
+            const text = await readFileAsText(file);
+            pendingAIAttachments.push({
+              kind: 'file',
+              name: file.name,
+              type: file.type || guessMimeByName(file.name),
+              size: file.size,
+              text: text.slice(0, 80000),
+              truncated: text.length > 80000
+            });
+          } else {
+            showToast(`${file.name} 已选中，但浏览器不能直接解析这种文件。请上传截图/图片，或复制文件文字到输入框。`);
+          }
+        } catch (err) {
+          showToast(`读取 ${file.name} 失败：${err.message}`);
+        }
+      }
+      event.target.value = '';
+      renderAIAttachmentPreview();
+    }
+
+    function renderAIAttachmentPreview() {
+      const box = document.getElementById('aiAttachmentPreview');
+      if (!box) return;
+      if (!pendingAIAttachments.length) {
+        box.classList.remove('show');
+        box.innerHTML = '';
+        return;
+      }
+      box.classList.add('show');
+      box.innerHTML = `<b>待发送附件</b><div class="attachment-list">${pendingAIAttachments.map((att, index) => `
+        <div class="attachment-chip">
+          <div>
+            <b>${att.kind === 'image' ? '🖼️' : '📄'} ${escapeHtml(att.name)}</b>
+            <div>${formatFileSize(att.size)}${att.truncated ? ' · 已截取前 8 万字符' : ''}</div>
+            ${att.kind === 'image' ? `<img class="attachment-thumb" src="${att.dataUrl}" alt="${escapeHtml(att.name)}" />` : ''}
+          </div>
+          <button class="btn ghost" type="button" onclick="removeAIAttachment(${index})">删除</button>
+        </div>`).join('')}</div>`;
+    }
+
+    function removeAIAttachment(index) {
+      pendingAIAttachments.splice(index, 1);
+      renderAIAttachmentPreview();
+    }
+
+    function clearAIAttachments() {
+      pendingAIAttachments = [];
+      document.querySelectorAll('.ai-file-input').forEach(input => { input.value = ''; });
+      renderAIAttachmentPreview();
+    }
+
+    function isReadableTextFile(file) {
+      if ((file.type || '').startsWith('text/')) return true;
+      const name = (file.name || '').toLowerCase();
+      return /\.(txt|md|markdown|json|csv|log|html|css|js|ts|jsx|tsx|py|java|cpp|c|go|rs|xml|yaml|yml)$/i.test(name);
+    }
+
+    function guessMimeByName(name) {
+      const lower = String(name || '').toLowerCase();
+      if (lower.endsWith('.json')) return 'application/json';
+      if (lower.endsWith('.csv')) return 'text/csv';
+      if (lower.endsWith('.md') || lower.endsWith('.markdown')) return 'text/markdown';
+      return 'text/plain';
+    }
+
+    function readFileAsText(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('无法读取文件'));
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.readAsText(file, 'utf-8');
+      });
+    }
+
+    function formatFileSize(size) {
+      const num = Number(size) || 0;
+      if (num < 1024) return `${num} B`;
+      if (num < 1024 * 1024) return `${(num / 1024).toFixed(1)} KB`;
+      return `${(num / 1024 / 1024).toFixed(1)} MB`;
+    }
+
+    function buildAIUserMessage(text, attachments) {
+      const safeAttachments = (attachments || []).map(att => ({ ...att }));
+      const fileBlocks = safeAttachments.filter(att => att.kind === 'file').map(att => {
+        return `\n\n【上传文件：${att.name}】\n${att.truncated ? '提示：文件较大，以下只包含前 8 万字符。\n' : ''}${att.text || ''}`;
+      }).join('');
+      const promptText = `${text || ''}${fileBlocks}`.trim() || '请分析我上传的内容。';
+      const imageAttachments = safeAttachments.filter(att => att.kind === 'image' && att.dataUrl);
+      const displayContent = [text || '', safeAttachments.length ? `已上传 ${safeAttachments.length} 个附件：${safeAttachments.map(a => a.name).join('、')}` : ''].filter(Boolean).join('\n\n');
+
+      let apiContent = promptText;
+      if (imageAttachments.length) {
+        apiContent = [{ type: 'text', text: promptText || '请分析我上传的图片。' }];
+        imageAttachments.slice(0, 3).forEach(img => {
+          apiContent.push({ type: 'image_url', image_url: { url: img.dataUrl } });
+        });
+      }
+
+      return {
+        role: 'user',
+        content: displayContent || promptText,
+        apiContent,
+        attachments: safeAttachments.map(att => ({ kind: att.kind, name: att.name, size: att.size, dataUrl: att.kind === 'image' ? att.dataUrl : '' }))
+      };
+    }
+
     async function sendAIMessage() {
       const input = document.getElementById('aiInput');
       const btn = document.getElementById('aiSendBtn');
       const text = input.value.trim();
-      if (!text) return showToast('先写一句想聊的话～');
-      if (!state.settings.apiProxyUrl.trim()) {
+      if (!text && !pendingAIAttachments.length) return showToast('先写一句话，或上传图片/文件～');
+      if (!DEEPSEEK_API_KEY || DEEPSEEK_API_KEY.includes('请把你的')) {
         switchTab('settings');
-        return showToast('请先填写 DeepSeek 安全代理地址');
+        return showToast('请先在 index.html 代码顶部填写 DEEPSEEK_API_KEY');
       }
-      state.aiMessages.push({ role: 'user', content: text });
+      const userMessage = buildAIUserMessage(text, pendingAIAttachments);
+      state.aiMessages.push(userMessage);
       input.value = '';
+      clearAIAttachments();
       renderAIChat(); saveState();
       btn.disabled = true; btn.textContent = '等待中';
       state.aiMessages.push({ role: 'assistant', content: '正在想怎么回复你…' });
@@ -444,7 +616,7 @@
         const reply = await callDeepSeek();
         state.aiMessages[state.aiMessages.length - 1] = { role: 'assistant', content: reply || '我没有收到有效回复，再试一次好吗？' };
       } catch (err) {
-        state.aiMessages[state.aiMessages.length - 1] = { role: 'assistant', content: `调用失败：${err.message}\n\n请检查安全代理地址是否正确、Worker 是否设置了 DEEPSEEK_API_KEY。` };
+        state.aiMessages[state.aiMessages.length - 1] = { role: 'assistant', content: `调用失败：${err.message}\n\n如果你刚上传了图片，可能是当前 DeepSeek API/模型不接受 image_url 多模态入参；可以先上传文字文件，或把图片内容描述给它。` };
       } finally {
         btn.disabled = false; btn.textContent = '发送';
         saveState(); renderAIChat();
@@ -452,16 +624,27 @@
     }
 
     async function callDeepSeek() {
-      const endpoint = state.settings.apiProxyUrl.trim();
+      const history = state.aiMessages
+        .filter(m => (m.role === 'user' || m.role === 'assistant') && m.content !== '正在想怎么回复你…')
+        .slice(-18)
+        .map(m => ({ role: m.role, content: m.apiContent || m.content }));
       const messages = [
         { role: 'system', content: state.settings.systemPrompt || defaultState.settings.systemPrompt },
-        ...state.aiMessages.filter(m => m.role === 'user' || m.role === 'assistant').slice(-18).map(m => ({ role: m.role, content: m.content }))
+        ...history
       ];
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: state.settings.deepseekModel || 'deepseek-v4-flash', messages, stream: false })
-      });
+      let response;
+      try {
+        response = await fetch(DEEPSEEK_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+          },
+          body: JSON.stringify({ model: state.settings.deepseekModel || 'deepseek-v4-flash', messages, stream: false })
+        });
+      } catch (err) {
+        throw new Error(`${err.message}。如果浏览器提示 CORS/跨域，说明 DeepSeek 不允许网页直连，还是需要 Worker 代理。`);
+      }
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error?.message || data.message || `HTTP ${response.status}`);
       return data.choices?.[0]?.message?.content || data.content || '';
@@ -885,7 +1068,8 @@
       const s = state.settings;
       document.getElementById('setNickname').value = s.nickname || '';
       document.getElementById('setPartner').value = s.partnerName || '';
-      document.getElementById('setProxyUrl').value = s.apiProxyUrl || '';
+      const proxyInput = document.getElementById('setProxyUrl');
+      if (proxyInput) proxyInput.value = s.apiProxyUrl || '';
       document.getElementById('setModel').value = s.deepseekModel || 'deepseek-v4-flash';
       document.getElementById('setPrompt').value = s.systemPrompt || defaultState.settings.systemPrompt;
       document.getElementById('setFirebaseConfig').value = s.firebaseConfigText || '';
@@ -899,7 +1083,8 @@
       const oldFirebase = state.settings.firebaseConfigText;
       state.settings.nickname = document.getElementById('setNickname').value.trim() || '宝贝';
       state.settings.partnerName = document.getElementById('setPartner').value.trim() || 'TA';
-      state.settings.apiProxyUrl = document.getElementById('setProxyUrl').value.trim();
+      const proxyInput = document.getElementById('setProxyUrl');
+      state.settings.apiProxyUrl = proxyInput ? proxyInput.value.trim() : '';
       state.settings.deepseekModel = document.getElementById('setModel').value;
       state.settings.systemPrompt = document.getElementById('setPrompt').value.trim() || defaultState.settings.systemPrompt;
       state.settings.firebaseConfigText = document.getElementById('setFirebaseConfig').value.trim();
@@ -924,9 +1109,13 @@
       if (!confirm('确定清空全部本地数据吗？这个操作不能恢复。')) return;
       closeRealtime();
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem('my_girl_v5_state');
+      localStorage.removeItem('my_girl_v4_state');
+      localStorage.removeItem('my_girl_v3_state');
       localStorage.removeItem('my_girl_v2_state');
       state = structuredClone(defaultState);
       pendingImageData = '';
+      pendingAIAttachments = [];
       init(); showToast('已恢复默认数据');
     }
 
@@ -936,6 +1125,7 @@
 
     function init() {
       applyTheme(); renderHeader(); renderAIChat(); renderDuoChat(); renderTasks(); renderPeriod(); fillSettingsForm(); fillPeriodForm(); renderSyncStatus(); checkPeriodNotification();
+      renderAIAttachmentPreview();
       document.getElementById('duoWho').value = state.settings.myRole || 'me';
       if (state.settings.firebaseConfigText && state.settings.roomId) connectRealtime(false);
     }
