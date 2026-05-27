@@ -50,7 +50,7 @@
     .divider { height:1px; background:var(--line); margin:16px 0; }
     label { display:block; font-size:13px; color:var(--muted); margin:10px 0 6px; font-weight:800; }
     textarea,input,select { width:100%; border:1px solid var(--line); background:rgba(255,255,255,.94); border-radius:18px; padding:12px 13px; font-size:14px; outline:none; color:var(--text); transition:.2s; }
-    textarea { resize:vertical; min-height:46px; max-height:180px; }
+    textarea { resize:none; min-height:44px; max-height:160px; overflow:hidden; }
     textarea:focus,input:focus,select:focus { border-color:var(--primary); box-shadow:0 0 0 4px rgba(255,111,159,.13); }
     .btn { border:0; background:linear-gradient(135deg,var(--primary),var(--primary-dark)); color:#fff; border-radius:17px; padding:12px 16px; font-weight:900; cursor:pointer; box-shadow:0 12px 24px rgba(233,79,132,.22); min-height:44px; }
     .btn:disabled { opacity:.55; cursor:not-allowed; }
@@ -67,7 +67,10 @@
     .bubble-row { display:flex; margin:10px 0; gap:8px; }
     .bubble-row.user,.bubble-row.me { justify-content:flex-end; }
     .bubble-row.assistant,.bubble-row.ta { justify-content:flex-start; }
-    .bubble { max-width:82%; padding:11px 13px; border-radius:18px; font-size:14px; line-height:1.55; white-space:pre-wrap; word-break:break-word; box-shadow:0 8px 20px rgba(0,0,0,.04); }
+    .bubble-row > div { max-width:82%; width:auto; display:flex; flex-direction:column; }
+    .bubble-row.user > div,.bubble-row.me > div { align-items:flex-end; }
+    .bubble-row.assistant > div,.bubble-row.ta > div { align-items:flex-start; }
+    .bubble { display:inline-block; width:-moz-fit-content; width:fit-content; max-width:min(100%, 330px); padding:9px 12px; border-radius:18px; font-size:14px; line-height:1.5; white-space:pre-wrap; word-break:break-word; box-shadow:0 8px 20px rgba(0,0,0,.04); }
     .bubble.user,.bubble.me { background:linear-gradient(135deg,var(--primary),#ff9dbc); color:white; border-bottom-right-radius:6px; }
     .bubble.assistant,.bubble.ta { background:white; color:var(--text); border:1px solid var(--line); border-bottom-left-radius:6px; }
     .meta { font-size:11px; color:var(--muted); margin-top:3px; }
@@ -121,7 +124,7 @@
         <div class="avatar">💗</div>
         <div>
           <h1 id="appTitle">宝贝小窝</h1>
-          <p id="appSubtitle">AI 对话 · 双人任务 · 姨妈提醒 · v6 直连密钥版</p>
+          <p id="appSubtitle">AI 对话 · 暗号互联 · 历史保存</p>
         </div>
       </div>
       <div class="chip" id="todayChip">今天</div>
@@ -130,8 +133,7 @@
     <main>
       <section class="page active" id="page-ai">
         <div class="card">
-          <h2>🤖 DeepSeek 对话 · 可上传图片/文件</h2>
-          <p class="hint">这一页已改成前端直连 DeepSeek。请在 index.html 代码顶部填写 DEEPSEEK_API_KEY，不在设置页面显示 sk。</p>
+          <h2>🤖 DeepSeek</h2>
         </div>
         <div class="card">
           <div class="chat-box" id="aiChatBox"></div>
@@ -145,14 +147,13 @@
             <button class="btn ghost" type="button" onclick="clearAIAttachments()">移除附件</button>
           </div>
           <div class="composer ai-composer">
-            <textarea id="aiInput" placeholder="想和 DeepSeek 说什么？先点上面的上传按钮选图片/文件，再点发送～" rows="1"></textarea>
+            <textarea id="aiInput" placeholder="想和 DeepSeek 说什么？" rows="1"></textarea>
             <label class="btn secondary attach-icon" title="选择图片或文件">📎
               <input class="file-input ai-file-input" id="aiFiles" type="file" multiple accept="image/*,.txt,.md,.markdown,.json,.csv,.log,.html,.css,.js,.ts,.jsx,.tsx,.py,.java,.cpp,.c,.go,.rs,.xml,.yaml,.yml,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" onchange="handleAIFiles(event)" />
             </label>
             <button class="btn" id="aiSendBtn" onclick="sendAIMessage()">发送</button>
           </div>
           <div class="attachment-preview" id="aiAttachmentPreview"></div>
-          <p class="hint">选中的附件会先显示在这里；文字/代码/CSV/JSON 会读取内容后发送，图片会压缩后一起发送。PDF/Word/Excel/PPT 暂不能纯前端直接解析，会提示你改用截图或复制文字。</p>
           <div class="btn-row">
             <button class="btn secondary" onclick="quickAI('帮我写一句温柔的晚安消息')">晚安文案</button>
             <button class="btn secondary" onclick="quickAI('今天有点累，哄哄我')">哄哄我</button>
@@ -165,10 +166,9 @@
         <div class="card">
           <h2>💬 我们俩的小聊天</h2>
           <div class="status">
-            <div><span class="dot" id="syncDot"></span><b id="syncTitle">本地模式</b><div class="small" id="syncText">没有配置 Firebase 时，只保存在当前浏览器。</div></div>
+            <div><span class="dot" id="syncDot"></span><b id="syncTitle">本地模式</b><div class="small" id="syncText">没有连接云同步时，只保存在当前浏览器。</div></div>
             <button class="btn ghost" onclick="copyRoomInfo()">复制房间</button>
           </div>
-          <p class="hint">两个人想互相看到消息：两边都填同一个 Firebase 配置和同一个房间 ID。没有配置时只能自己本机看到。</p>
         </div>
 
         <div class="card">
@@ -264,30 +264,30 @@
 
           <div class="divider"></div>
           <h3>DeepSeek</h3>
-          <div class="warn">当前版本是“代码内置密钥模式”：设置页不显示 sk。打开 index.html，搜索 <b>DEEPSEEK_API_KEY</b>，把引号里的内容改成你的 sk 密钥即可。</div>
           <label>模型</label>
           <select id="setModel">
-            <option value="deepseek-v4-flash">deepseek-v4-flash（更快）</option>
-            <option value="deepseek-v4-pro">deepseek-v4-pro（更强）</option>
-            <option value="deepseek-chat">deepseek-chat（官方常用名）</option>
-            <option value="deepseek-reasoner">deepseek-reasoner（推理模型）</option>
+            <option value="deepseek-v4-flash">deepseek-v4-flash</option>
+            <option value="deepseek-v4-pro">deepseek-v4-pro</option>
+            <option value="deepseek-chat">deepseek-chat</option>
+            <option value="deepseek-reasoner">deepseek-reasoner</option>
           </select>
           <label>AI 系统提示词</label>
           <textarea id="setPrompt" rows="4"></textarea>
-          <div class="danger">注意：密钥写进 index.html 后，任何访问网页的人都可能从源码里看到它。只建议你自己测试或私人仓库使用。</div>
 
           <div class="divider"></div>
           <h3>双人同步</h3>
-          <label>Firebase 配置 JSON</label>
-          <textarea id="setFirebaseConfig" rows="6" placeholder='例如：{"apiKey":"...","authDomain":"...","projectId":"...","appId":"..."}'></textarea>
-          <label>房间 ID</label>
-          <input id="setRoomId" placeholder="例如：love-room-520" />
+          <label>聊天暗号</label>
+          <input id="setPairCode" type="password" placeholder="两个人输入完全相同的暗号，例如：520love2026" />
           <label>我的身份</label>
           <select id="setRole">
             <option value="me">我是“我”</option>
             <option value="ta">我是“TA”</option>
           </select>
-          <div class="warn">Firebase 配置不是 DeepSeek sk，可以放前端；但 Firestore 规则要自己限制读写范围。情侣自用可先用随机房间 ID。</div>
+          <details style="margin-top:12px;">
+            <summary class="small" style="cursor:pointer; font-weight:900; color:var(--primary-dark);">高级：云同步配置</summary>
+            <label>Firebase 配置 JSON</label>
+            <textarea id="setFirebaseConfig" rows="6" placeholder='例如：{"apiKey":"...","authDomain":"...","projectId":"...","appId":"..."}'></textarea>
+          </details>
 
           <div class="divider"></div>
           <label>主题颜色</label>
@@ -297,8 +297,8 @@
             <option value="blue">奶油蓝</option>
           </select>
           <div class="btn-row">
-            <button class="btn" onclick="saveSettings()">保存设置</button>
-            <button class="btn secondary" onclick="connectRealtime(true)">测试同步</button>
+            <button class="btn" onclick="saveSettings()">保存并连接</button>
+            <button class="btn secondary" onclick="connectRealtime(true)">重新连接</button>
             <button class="btn ghost" onclick="exportData()">导出数据</button>
             <button class="btn danger-btn" onclick="resetAll()">清空全部</button>
           </div>
@@ -316,17 +316,17 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    const STORAGE_KEY = 'my_girl_v6_state';
+    const STORAGE_KEY = 'my_girl_v10_state';
 
-    // ===== DeepSeek 密钥填写位置 =====
-    // 把下面引号里的内容换成你的 sk- 开头密钥。
-    // 例如：const DEEPSEEK_API_KEY = 'sk-f1ce9072b5694a0b8b15b1124238ae41';
-    // 警告：写在前端文件里会暴露密钥，公开网页不要这样做。
     const DEEPSEEK_API_KEY = 'sk-f1ce9072b5694a0b8b15b1124238ae41';
     const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
 
     const FIREBASE_VERSION = '10.12.5';
+    const PEERJS_CDN = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
+    const BUILTIN_FIREBASE_CONFIG = null;
     const todayISO = () => new Date().toISOString().slice(0, 10);
+    const CLIENT_ID_KEY = 'my_girl_client_id';
+    const clientId = localStorage.getItem(CLIENT_ID_KEY) || (() => { const id = crypto.randomUUID(); localStorage.setItem(CLIENT_ID_KEY, id); return id; })();
 
     const defaultState = {
       settings: {
@@ -337,11 +337,12 @@
         theme: 'pink',
         systemPrompt: '你是一个温柔、可爱、懂得照顾情绪的中文 AI 伴侣。回答要自然、有温度，必要时给出清晰可执行的建议。',
         firebaseConfigText: '',
-        roomId: 'love-room-' + Math.random().toString(36).slice(2, 8),
+        roomId: '',
+        pairCode: '',
         myRole: 'me'
       },
       aiMessages: [
-        { role: 'assistant', content: '嗨～我已经在这里啦。这个版本的 sk 密钥写在 index.html 代码顶部，不会在设置页显示。' }
+        { role: 'assistant', content: '嗨～我在这里。' }
       ],
       duoMessages: [],
       duoTasks: [],
@@ -361,12 +362,21 @@
     let firestoreReady = false;
     let firestoreConnecting = false;
     let firebaseApi = null;
+    let activeDb = null;
     let activeUnsubs = [];
+    let presenceTimer = null;
+    let presenceRef = null;
+    let memberCount = 0;
+    let p2pPeer = null;
+    let p2pHost = false;
+    let p2pReady = false;
+    let p2pConnecting = false;
+    let p2pConnections = new Map();
 
     function loadState() {
       try {
         const legacy = JSON.parse(localStorage.getItem('my_girl_v2_state') || 'null');
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || JSON.parse(localStorage.getItem('my_girl_v5_state') || 'null') || JSON.parse(localStorage.getItem('my_girl_v4_state') || 'null') || JSON.parse(localStorage.getItem('my_girl_v3_state') || 'null') || legacy;
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || JSON.parse(localStorage.getItem('my_girl_v6_state') || 'null') || JSON.parse(localStorage.getItem('my_girl_v5_state') || 'null') || JSON.parse(localStorage.getItem('my_girl_v4_state') || 'null') || JSON.parse(localStorage.getItem('my_girl_v3_state') || 'null') || legacy;
         const merged = saved ? deepMerge(structuredClone(defaultState), saved) : structuredClone(defaultState);
         delete merged.settings.deepseekApiKey;
         delete merged.settings.apiBaseUrl;
@@ -429,6 +439,243 @@
       document.getElementById('todayChip').textContent = `${now.getMonth() + 1}/${now.getDate()}`;
     }
 
+    function roomLabel() {
+      const id = state.settings.roomId || '';
+      return id ? id.slice(-8).toUpperCase() : '未生成';
+    }
+
+    function hasCloudConfig() {
+      return !!(BUILTIN_FIREBASE_CONFIG || String(state.settings.firebaseConfigText || '').trim());
+    }
+
+
+    function liveReady() {
+      return firestoreReady || p2pReady;
+    }
+
+    function liveModeName() {
+      if (firestoreReady) return '云同步';
+      if (p2pReady) return '暗号直连';
+      return '本地';
+    }
+
+    function p2pOnlineCount() {
+      if (!p2pPeer) return 0;
+      return Math.max(1, p2pConnections.size + 1);
+    }
+
+    function mergeById(existing, incoming, newestFirst = false) {
+      const map = new Map((existing || []).filter(x => x && x.id).map(x => [x.id, x]));
+      let changed = false;
+      (incoming || []).forEach(item => {
+        if (!item || !item.id) return;
+        const old = map.get(item.id);
+        if (!old || JSON.stringify(old) !== JSON.stringify(item)) {
+          map.set(item.id, { ...(old || {}), ...item });
+          changed = true;
+        }
+      });
+      const arr = Array.from(map.values());
+      arr.sort((a, b) => newestFirst
+        ? new Date(b.createdAt || b.updatedAt || 0) - new Date(a.createdAt || a.updatedAt || 0)
+        : new Date(a.createdAt || a.updatedAt || 0) - new Date(b.createdAt || b.updatedAt || 0));
+      return { changed, arr };
+    }
+
+    function mergeDuoMessages(items, shouldRender = true) {
+      const result = mergeById(state.duoMessages, Array.isArray(items) ? items : [items], false);
+      if (result.changed) {
+        state.duoMessages = result.arr;
+        saveState();
+        if (shouldRender) renderDuoChat();
+      }
+      return result.changed;
+    }
+
+    function mergeDuoTasks(items, shouldRender = true) {
+      const result = mergeById(state.duoTasks, Array.isArray(items) ? items : [items], true);
+      if (result.changed) {
+        state.duoTasks = result.arr;
+        saveState();
+        if (shouldRender) renderTasks();
+      }
+      return result.changed;
+    }
+
+    function removeDuoTaskIds(ids, shouldRender = true) {
+      const set = new Set(Array.isArray(ids) ? ids : [ids]);
+      const before = state.duoTasks.length;
+      state.duoTasks = state.duoTasks.filter(t => !set.has(t.id));
+      const changed = before !== state.duoTasks.length;
+      if (changed) {
+        saveState();
+        if (shouldRender) renderTasks();
+      }
+      return changed;
+    }
+
+    function applyRemotePeriod(period) {
+      if (!period) return;
+      state.period = { ...state.period, ...period };
+      saveState();
+      renderPeriod();
+      fillPeriodForm();
+      checkPeriodNotification();
+    }
+
+    function p2pBroadcast(payload, exceptPeerId = '') {
+      if (!p2pPeer || !payload) return;
+      const packet = { ...payload, fromClientId: clientId, sentAt: new Date().toISOString() };
+      p2pConnections.forEach((conn, peerId) => {
+        if (peerId === exceptPeerId) return;
+        try { if (conn && conn.open) conn.send(packet); } catch (_) {}
+      });
+    }
+
+    function p2pFullStatePayload() {
+      return {
+        type: 'sync',
+        messages: state.duoMessages || [],
+        tasks: state.duoTasks || [],
+        period: state.period || {},
+        settings: { nickname: state.settings.nickname, partnerName: state.settings.partnerName }
+      };
+    }
+
+    function p2pSendFullState(conn) {
+      try { if (conn && conn.open) conn.send({ ...p2pFullStatePayload(), fromClientId: clientId, sentAt: new Date().toISOString() }); } catch (_) {}
+    }
+
+    function handleP2PData(data, fromPeerId = '') {
+      if (!data || data.fromClientId === clientId) return;
+      let changed = false;
+      if (data.type === 'message') {
+        changed = mergeDuoMessages(data.message) || changed;
+      } else if (data.type === 'sync') {
+        changed = mergeDuoMessages(data.messages || []) || changed;
+        changed = mergeDuoTasks(data.tasks || []) || changed;
+        if (data.period) applyRemotePeriod(data.period);
+        const conn = p2pConnections.get(fromPeerId);
+        if (conn && conn.open) setTimeout(() => p2pSendFullState(conn), 250);
+      } else if (data.type === 'task') {
+        changed = mergeDuoTasks(data.task) || changed;
+      } else if (data.type === 'taskDelete') {
+        changed = removeDuoTaskIds(data.ids || data.id) || changed;
+      } else if (data.type === 'clearMessages') {
+        state.duoMessages = [];
+        saveState(); renderDuoChat();
+        changed = true;
+      } else if (data.type === 'period') {
+        applyRemotePeriod(data.period);
+        changed = true;
+      }
+      if (p2pHost && changed) p2pBroadcast(data, fromPeerId);
+    }
+
+    function setupP2PConnection(conn) {
+      if (!conn) return;
+      p2pConnections.set(conn.peer, conn);
+      conn.on('open', () => {
+        p2pReady = true;
+        p2pConnecting = false;
+        firestoreConnecting = false;
+        renderSyncStatus();
+        p2pSendFullState(conn);
+      });
+      conn.on('data', data => handleP2PData(data, conn.peer));
+      conn.on('close', () => {
+        p2pConnections.delete(conn.peer);
+        p2pReady = !!p2pHost || p2pConnections.size > 0;
+        renderSyncStatus();
+      });
+      conn.on('error', () => {
+        p2pConnections.delete(conn.peer);
+        renderSyncStatus();
+      });
+    }
+
+    function loadPeerJS() {
+      return new Promise((resolve, reject) => {
+        if (window.Peer) return resolve();
+        const existing = document.querySelector('script[data-peerjs]');
+        if (existing) {
+          existing.addEventListener('load', resolve, { once: true });
+          existing.addEventListener('error', () => reject(new Error('PeerJS 加载失败')), { once: true });
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = PEERJS_CDN;
+        script.async = true;
+        script.dataset.peerjs = '1';
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('PeerJS 加载失败'));
+        document.head.appendChild(script);
+      });
+    }
+
+    function roomPeerId(roomId) {
+      return ('mygirl-' + String(roomId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40)).toLowerCase();
+    }
+
+    async function connectP2P(roomId, showResult = false) {
+      await loadPeerJS();
+      p2pConnecting = true;
+      firestoreConnecting = true;
+      renderSyncStatus();
+      const targetPeerId = roomPeerId(roomId);
+      await new Promise((resolve) => {
+        let resolved = false;
+        const finish = () => { if (!resolved) { resolved = true; resolve(); } };
+        const becomeClient = () => {
+          p2pHost = false;
+          p2pPeer = new Peer(undefined, { debug: 0 });
+          p2pPeer.on('open', () => {
+            const conn = p2pPeer.connect(targetPeerId, { reliable: true, metadata: { clientId, name: state.settings.nickname } });
+            setupP2PConnection(conn);
+            setTimeout(finish, 600);
+          });
+          p2pPeer.on('connection', setupP2PConnection);
+          p2pPeer.on('error', err => {
+            p2pReady = false;
+            p2pConnecting = false;
+            firestoreConnecting = false;
+            renderSyncStatus();
+            if (showResult) showToast('暗号直连失败：' + (err?.message || err));
+            finish();
+          });
+        };
+        p2pPeer = new Peer(targetPeerId, { debug: 0 });
+        p2pPeer.on('open', () => {
+          p2pHost = true;
+          p2pReady = true;
+          p2pConnecting = false;
+          firestoreConnecting = false;
+          renderSyncStatus();
+          if (showResult) showToast('已进入暗号房间，等待对方打开同一暗号');
+          finish();
+        });
+        p2pPeer.on('connection', setupP2PConnection);
+        p2pPeer.on('error', err => {
+          const msg = String(err?.type || err?.message || err);
+          try { if (p2pPeer) p2pPeer.destroy(); } catch (_) {}
+          if (msg.includes('unavailable-id') || msg.includes('taken') || msg.includes('ID')) {
+            becomeClient();
+          } else {
+            p2pReady = false;
+            p2pConnecting = false;
+            firestoreConnecting = false;
+            renderSyncStatus();
+            if (showResult) showToast('暗号直连失败：' + (err?.message || err));
+            finish();
+          }
+        });
+      });
+      p2pConnecting = false;
+      firestoreConnecting = false;
+      renderSyncStatus();
+      if (showResult && p2pReady && p2pConnections.size > 0) showToast('暗号直连成功');
+    }
+
     function renderSyncStatus() {
       const dot = document.getElementById('syncDot');
       const title = document.getElementById('syncTitle');
@@ -436,218 +683,24 @@
       dot.className = 'dot';
       if (firestoreReady) {
         dot.classList.add('on');
-        title.textContent = '实时同步中';
-        text.textContent = `房间：${state.settings.roomId || '未设置'} · 两个人填同一个房间 ID 即可互通`;
-      } else if (firestoreConnecting) {
+        title.textContent = '暗号房间已连接';
+        text.textContent = `云同步 · 房间尾号 ${roomLabel()} · 在线 ${Math.max(memberCount, 1)}`;
+      } else if (p2pReady) {
+        dot.classList.add('on');
+        title.textContent = '暗号房间已在线';
+        text.textContent = `直连 · 房间尾号 ${roomLabel()} · 在线 ${p2pOnlineCount()}`;
+      } else if (firestoreConnecting || p2pConnecting) {
         dot.classList.add('warn-dot');
-        title.textContent = '正在连接同步';
-        text.textContent = '正在连接 Firebase，请稍等。';
-      } else if (state.settings.firebaseConfigText && state.settings.roomId) {
+        title.textContent = '正在进入暗号房间';
+        text.textContent = '请保持两边页面都打开。';
+      } else if (state.settings.pairCode) {
         dot.classList.add('warn-dot');
-        title.textContent = '同步未连接';
-        text.textContent = '配置已填写，但尚未连接成功。可去设置里点“测试同步”。';
+        title.textContent = '暗号房间未连接';
+        text.textContent = '点“保存并连接”或“重新连接”。';
       } else {
-        title.textContent = '本地模式';
-        text.textContent = '没有配置 Firebase 时，只保存在当前浏览器。';
+        title.textContent = '未进入房间';
+        text.textContent = '先到设置输入同一个聊天暗号。';
       }
-    }
-
-    function renderAIChat() {
-      const box = document.getElementById('aiChatBox');
-      box.innerHTML = state.aiMessages.map(msg => {
-        const side = msg.role === 'user' ? 'user' : 'assistant';
-        const meta = msg.role === 'user' ? escapeHtml(state.settings.nickname) : 'DeepSeek';
-        const attachments = Array.isArray(msg.attachments) ? msg.attachments : [];
-        const attachmentHtml = attachments.length ? `<div class="msg-attachments">${attachments.map(att => {
-          if (att.kind === 'image' && att.dataUrl) return `<img class="msg-img" src="${att.dataUrl}" alt="${escapeHtml(att.name || 'image')}" />`;
-          return `<div class="msg-file">📎 ${escapeHtml(att.name || '文件')}${att.size ? ` · ${formatFileSize(att.size)}` : ''}</div>`;
-        }).join('')}</div>` : '';
-        return `
-        <div class="bubble-row ${side}">
-          <div>
-            <div class="bubble ${side}">${escapeHtml(msg.content)}${attachmentHtml}</div>
-            <div class="meta">${meta}</div>
-          </div>
-        </div>`;
-      }).join('');
-      box.scrollTop = box.scrollHeight;
-    }
-
-    function quickAI(text) { document.getElementById('aiInput').value = text; sendAIMessage(); }
-
-    async function handleAIFiles(event) {
-      const files = Array.from(event.target.files || []);
-      if (!files.length) return;
-      for (const file of files) {
-        if (pendingAIAttachments.length >= 6) {
-          showToast('一次最多上传 6 个附件');
-          break;
-        }
-        try {
-          if (file.type.startsWith('image/')) {
-            const dataUrl = await compressImage(file, 1280, 0.78);
-            pendingAIAttachments.push({ kind: 'image', name: file.name, type: file.type, size: file.size, dataUrl });
-          } else if (isReadableTextFile(file)) {
-            if (file.size > 1024 * 1024) showToast(`${file.name} 较大，只会读取前面一部分内容`);
-            const text = await readFileAsText(file);
-            pendingAIAttachments.push({
-              kind: 'file',
-              name: file.name,
-              type: file.type || guessMimeByName(file.name),
-              size: file.size,
-              text: text.slice(0, 80000),
-              truncated: text.length > 80000
-            });
-          } else {
-            showToast(`${file.name} 已选中，但浏览器不能直接解析这种文件。请上传截图/图片，或复制文件文字到输入框。`);
-          }
-        } catch (err) {
-          showToast(`读取 ${file.name} 失败：${err.message}`);
-        }
-      }
-      event.target.value = '';
-      renderAIAttachmentPreview();
-    }
-
-    function renderAIAttachmentPreview() {
-      const box = document.getElementById('aiAttachmentPreview');
-      if (!box) return;
-      if (!pendingAIAttachments.length) {
-        box.classList.remove('show');
-        box.innerHTML = '';
-        return;
-      }
-      box.classList.add('show');
-      box.innerHTML = `<b>待发送附件</b><div class="attachment-list">${pendingAIAttachments.map((att, index) => `
-        <div class="attachment-chip">
-          <div>
-            <b>${att.kind === 'image' ? '🖼️' : '📄'} ${escapeHtml(att.name)}</b>
-            <div>${formatFileSize(att.size)}${att.truncated ? ' · 已截取前 8 万字符' : ''}</div>
-            ${att.kind === 'image' ? `<img class="attachment-thumb" src="${att.dataUrl}" alt="${escapeHtml(att.name)}" />` : ''}
-          </div>
-          <button class="btn ghost" type="button" onclick="removeAIAttachment(${index})">删除</button>
-        </div>`).join('')}</div>`;
-    }
-
-    function removeAIAttachment(index) {
-      pendingAIAttachments.splice(index, 1);
-      renderAIAttachmentPreview();
-    }
-
-    function clearAIAttachments() {
-      pendingAIAttachments = [];
-      document.querySelectorAll('.ai-file-input').forEach(input => { input.value = ''; });
-      renderAIAttachmentPreview();
-    }
-
-    function isReadableTextFile(file) {
-      if ((file.type || '').startsWith('text/')) return true;
-      const name = (file.name || '').toLowerCase();
-      return /\.(txt|md|markdown|json|csv|log|html|css|js|ts|jsx|tsx|py|java|cpp|c|go|rs|xml|yaml|yml)$/i.test(name);
-    }
-
-    function guessMimeByName(name) {
-      const lower = String(name || '').toLowerCase();
-      if (lower.endsWith('.json')) return 'application/json';
-      if (lower.endsWith('.csv')) return 'text/csv';
-      if (lower.endsWith('.md') || lower.endsWith('.markdown')) return 'text/markdown';
-      return 'text/plain';
-    }
-
-    function readFileAsText(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onerror = () => reject(new Error('无法读取文件'));
-        reader.onload = () => resolve(String(reader.result || ''));
-        reader.readAsText(file, 'utf-8');
-      });
-    }
-
-    function formatFileSize(size) {
-      const num = Number(size) || 0;
-      if (num < 1024) return `${num} B`;
-      if (num < 1024 * 1024) return `${(num / 1024).toFixed(1)} KB`;
-      return `${(num / 1024 / 1024).toFixed(1)} MB`;
-    }
-
-    function buildAIUserMessage(text, attachments) {
-      const safeAttachments = (attachments || []).map(att => ({ ...att }));
-      const fileBlocks = safeAttachments.filter(att => att.kind === 'file').map(att => {
-        return `\n\n【上传文件：${att.name}】\n${att.truncated ? '提示：文件较大，以下只包含前 8 万字符。\n' : ''}${att.text || ''}`;
-      }).join('');
-      const promptText = `${text || ''}${fileBlocks}`.trim() || '请分析我上传的内容。';
-      const imageAttachments = safeAttachments.filter(att => att.kind === 'image' && att.dataUrl);
-      const displayContent = [text || '', safeAttachments.length ? `已上传 ${safeAttachments.length} 个附件：${safeAttachments.map(a => a.name).join('、')}` : ''].filter(Boolean).join('\n\n');
-
-      let apiContent = promptText;
-      if (imageAttachments.length) {
-        apiContent = [{ type: 'text', text: promptText || '请分析我上传的图片。' }];
-        imageAttachments.slice(0, 3).forEach(img => {
-          apiContent.push({ type: 'image_url', image_url: { url: img.dataUrl } });
-        });
-      }
-
-      return {
-        role: 'user',
-        content: displayContent || promptText,
-        apiContent,
-        attachments: safeAttachments.map(att => ({ kind: att.kind, name: att.name, size: att.size, dataUrl: att.kind === 'image' ? att.dataUrl : '' }))
-      };
-    }
-
-    async function sendAIMessage() {
-      const input = document.getElementById('aiInput');
-      const btn = document.getElementById('aiSendBtn');
-      const text = input.value.trim();
-      if (!text && !pendingAIAttachments.length) return showToast('先写一句话，或上传图片/文件～');
-      if (!DEEPSEEK_API_KEY || DEEPSEEK_API_KEY.includes('请把你的')) {
-        switchTab('settings');
-        return showToast('请先在 index.html 代码顶部填写 DEEPSEEK_API_KEY');
-      }
-      const userMessage = buildAIUserMessage(text, pendingAIAttachments);
-      state.aiMessages.push(userMessage);
-      input.value = '';
-      clearAIAttachments();
-      renderAIChat(); saveState();
-      btn.disabled = true; btn.textContent = '等待中';
-      state.aiMessages.push({ role: 'assistant', content: '正在想怎么回复你…' });
-      renderAIChat();
-      try {
-        const reply = await callDeepSeek();
-        state.aiMessages[state.aiMessages.length - 1] = { role: 'assistant', content: reply || '我没有收到有效回复，再试一次好吗？' };
-      } catch (err) {
-        state.aiMessages[state.aiMessages.length - 1] = { role: 'assistant', content: `调用失败：${err.message}\n\n如果你刚上传了图片，可能是当前 DeepSeek API/模型不接受 image_url 多模态入参；可以先上传文字文件，或把图片内容描述给它。` };
-      } finally {
-        btn.disabled = false; btn.textContent = '发送';
-        saveState(); renderAIChat();
-      }
-    }
-
-    async function callDeepSeek() {
-      const history = state.aiMessages
-        .filter(m => (m.role === 'user' || m.role === 'assistant') && m.content !== '正在想怎么回复你…')
-        .slice(-18)
-        .map(m => ({ role: m.role, content: m.apiContent || m.content }));
-      const messages = [
-        { role: 'system', content: state.settings.systemPrompt || defaultState.settings.systemPrompt },
-        ...history
-      ];
-      let response;
-      try {
-        response = await fetch(DEEPSEEK_API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
-          },
-          body: JSON.stringify({ model: state.settings.deepseekModel || 'deepseek-v4-flash', messages, stream: false })
-        });
-      } catch (err) {
-        throw new Error(`${err.message}。如果浏览器提示 CORS/跨域，说明 DeepSeek 不允许网页直连，还是需要 Worker 代理。`);
-      }
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error?.message || data.message || `HTTP ${response.status}`);
-      return data.choices?.[0]?.message?.content || data.content || '';
     }
 
     function clearAIChat() {
@@ -663,16 +716,21 @@
         return;
       }
       const messages = [...state.duoMessages].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
-      box.innerHTML = messages.map(msg => `
-        <div class="bubble-row ${msg.who}">
+      box.innerHTML = messages.map(msg => {
+        const isMine = msg.senderId ? msg.senderId === clientId : msg.who === state.settings.myRole;
+        const side = isMine ? 'me' : 'ta';
+        const name = msg.senderName || (msg.who === 'me' ? state.settings.nickname : state.settings.partnerName) || (isMine ? '我' : 'TA');
+        return `
+        <div class="bubble-row ${side}">
           <div>
-            <div class="bubble ${msg.who}">
+            <div class="bubble ${side}">
               ${msg.text ? escapeHtml(msg.text) : ''}
               ${msg.image ? `<img class="msg-img" src="${msg.image}" alt="提交图片" />` : ''}
             </div>
-            <div class="meta">${msg.who === 'me' ? escapeHtml(state.settings.nickname) : escapeHtml(state.settings.partnerName)} · ${formatDateTime(msg.createdAt)}</div>
+            <div class="meta">${escapeHtml(name)} · ${formatDateTime(msg.createdAt)}</div>
           </div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
       box.scrollTop = box.scrollHeight;
     }
 
@@ -684,11 +742,11 @@
       if (!file) return;
       if (!file.type.startsWith('image/')) return showToast('请选择图片文件');
       try {
-        pendingImageData = await compressImage(file, 900, 0.72);
-        if (pendingImageData.length > 850000) {
+        pendingImageData = await compressImage(file, 820, 0.68);
+        if (pendingImageData.length > 650000) {
           pendingImageData = '';
           event.target.value = '';
-          return showToast('图片还是太大，换一张小一点的图');
+          return showToast('图片还是太大，换一张小一点的图，避免云端保存失败');
         }
         preview.src = pendingImageData;
         preview.style.display = 'block';
@@ -724,18 +782,28 @@
       const text = textEl.value.trim();
       const who = document.getElementById('duoWho').value;
       if (!text && !pendingImageData) return showToast('写点文字或选择一张图片再提交～');
-      const message = { id: crypto.randomUUID(), who, text, image: pendingImageData, createdAt: new Date().toISOString() };
+      const message = {
+        id: crypto.randomUUID(),
+        who,
+        senderId: clientId,
+        senderName: who === 'me' ? state.settings.nickname : state.settings.partnerName,
+        text,
+        image: pendingImageData,
+        createdAt: new Date().toISOString()
+      };
       try {
         if (firestoreReady) await addRemoteMessage(message);
         else {
-          state.duoMessages.push(message);
-          saveState(); renderDuoChat();
+          mergeDuoMessages(message);
+          if (p2pReady) p2pBroadcast({ type: 'message', message });
+          else if (state.settings.pairCode) connectRealtime(false);
         }
         textEl.value = '';
+        autoSizeTextarea(textEl);
         document.getElementById('duoImage').value = '';
         document.getElementById('duoPreview').style.display = 'none';
         pendingImageData = '';
-        showToast(firestoreReady ? '已同步到你们的小聊天' : '已保存到本地聊天');
+        showToast(liveReady() ? '已发送' : '已保存，正在尝试进入暗号房间');
       } catch (err) {
         showToast('发送失败：' + err.message);
       }
@@ -750,6 +818,7 @@
       } else {
         state.duoMessages = [];
         saveState(); renderDuoChat();
+        if (p2pReady) p2pBroadcast({ type: 'clearMessages' });
       }
     }
 
@@ -763,13 +832,14 @@
       try {
         if (firestoreReady) await addRemoteTask(task);
         else {
-          state.duoTasks.unshift(task);
-          saveState(); renderTasks();
+          mergeDuoTasks(task);
+          if (p2pReady) p2pBroadcast({ type: 'task', task });
+          else if (state.settings.pairCode) connectRealtime(false);
         }
         document.getElementById('taskTitle').value = '';
         document.getElementById('taskDesc').value = '';
         document.getElementById('taskDue').value = '';
-        showToast(firestoreReady ? '任务已同步发布' : '任务已保存到本地');
+        showToast(liveReady() ? '任务已发布' : '任务已保存，正在尝试进入暗号房间');
       } catch (err) {
         showToast('发布失败：' + err.message);
       }
@@ -809,6 +879,7 @@
         else {
           Object.assign(task, patch);
           saveState(); renderTasks();
+          if (p2pReady) p2pBroadcast({ type: 'task', task });
         }
         showToast(patch.done ? '任务完成啦，表现不错！' : '已改回进行中');
       } catch (err) {
@@ -822,6 +893,8 @@
       const message = {
         id: crypto.randomUUID(),
         who: task.owner,
+        senderId: clientId,
+        senderName: task.owner === 'me' ? state.settings.nickname : state.settings.partnerName,
         text: `任务反馈：${task.title}\n状态：${task.done ? '已完成' : '进行中'}${task.desc ? `\n说明：${task.desc}` : ''}`,
         image: '',
         createdAt: new Date().toISOString()
@@ -829,8 +902,8 @@
       try {
         if (firestoreReady) await addRemoteMessage(message);
         else {
-          state.duoMessages.push(message);
-          saveState(); renderDuoChat();
+          mergeDuoMessages(message);
+          if (p2pReady) p2pBroadcast({ type: 'message', message });
         }
         switchTab('us');
         showToast('已提交到聊天记录');
@@ -843,8 +916,8 @@
       try {
         if (firestoreReady) await deleteRemoteTask(id);
         else {
-          state.duoTasks = state.duoTasks.filter(t => t.id !== id);
-          saveState(); renderTasks();
+          removeDuoTaskIds(id);
+          if (p2pReady) p2pBroadcast({ type: 'taskDelete', id, ids: [id] });
         }
       } catch (err) {
         showToast('删除失败：' + err.message);
@@ -857,8 +930,10 @@
         if (firestoreReady) {
           for (const task of doneTasks) await deleteRemoteTask(task.id);
         } else {
+          const ids = doneTasks.map(t => t.id);
           state.duoTasks = state.duoTasks.filter(t => !t.done);
           saveState(); renderTasks();
+          if (p2pReady && ids.length) p2pBroadcast({ type: 'taskDelete', ids });
         }
         showToast('已清理完成任务');
       } catch (err) {
@@ -867,11 +942,60 @@
     }
 
     function parseFirebaseConfig() {
-      const text = (state.settings.firebaseConfigText || '').trim();
-      if (!text) return null;
-      const config = JSON.parse(text);
-      if (!config.apiKey || !config.projectId || !config.appId) throw new Error('Firebase 配置缺少 apiKey/projectId/appId');
+      const config = BUILTIN_FIREBASE_CONFIG || (() => {
+        const text = (state.settings.firebaseConfigText || '').trim();
+        return text ? JSON.parse(text) : null;
+      })();
+      if (!config) return null;
+      if (!config.apiKey || !config.projectId || !config.appId) throw new Error('云同步配置缺少 apiKey/projectId/appId');
       return config;
+    }
+
+    async function deriveRoomIdFromPassphrase(passphrase) {
+      const raw = String(passphrase || '').trim();
+      if (!raw) return '';
+      const normalized = raw.normalize('NFKC').replace(/\s+/g, ' ');
+      if (window.crypto?.subtle) {
+        const bytes = new TextEncoder().encode('my-girl-room-v1:' + normalized);
+        const digest = await crypto.subtle.digest('SHA-256', bytes);
+        const hex = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+        return cleanRoomId('love-' + hex.slice(0, 32));
+      }
+      let h = 2166136261;
+      for (const ch of normalized) {
+        h ^= ch.charCodeAt(0);
+        h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
+      }
+      return cleanRoomId('love-' + Math.abs(h >>> 0).toString(16));
+    }
+
+    async function ensureRoomFromPassphrase() {
+      const code = String(state.settings.pairCode || '').trim();
+      if (!code) return '';
+      const roomId = await deriveRoomIdFromPassphrase(code);
+      state.settings.roomId = roomId;
+      saveState();
+      return roomId;
+    }
+
+    function onlineMembersFromSnap(snap) {
+      const now = Date.now();
+      return snap.docs.map(d => normalizeDoc(d.data())).filter(item => {
+        const t = item.lastSeen ? new Date(item.lastSeen).getTime() : 0;
+        return t && now - t < 2 * 60 * 1000;
+      });
+    }
+
+    async function updatePresence(db, roomId) {
+      if (!firebaseApi) return;
+      const { doc, setDoc, serverTimestamp } = firebaseApi;
+      presenceRef = doc(db, 'rooms', roomId, 'members', clientId);
+      await setDoc(presenceRef, {
+        id: clientId,
+        name: state.settings.myRole === 'me' ? state.settings.nickname : state.settings.partnerName,
+        role: state.settings.myRole,
+        lastSeen: serverTimestamp()
+      }, { merge: true });
     }
 
     async function connectRealtime(showResult = false) {
@@ -880,9 +1004,13 @@
       firestoreConnecting = true;
       renderSyncStatus();
       try {
+        const roomId = await ensureRoomFromPassphrase();
+        if (!roomId) throw new Error('请先填写聊天暗号。两个人输入完全相同的暗号才能进入同一房间');
         const config = parseFirebaseConfig();
-        const roomId = cleanRoomId(state.settings.roomId);
-        if (!config || !roomId) throw new Error('请填写 Firebase 配置和房间 ID');
+        if (!config) {
+          await connectP2P(roomId, showResult);
+          return;
+        }
         if (!firebaseApi) {
           const appMod = await import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-app.js`);
           const fsMod = await import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-firestore.js`);
@@ -891,11 +1019,22 @@
         const appName = 'my-girl-' + config.projectId;
         const app = firebaseApi.getApps().find(a => a.name === appName) || firebaseApi.initializeApp(config, appName);
         const db = firebaseApi.getFirestore(app);
+        activeDb = db;
         const roomRef = firebaseApi.doc(db, 'rooms', roomId);
-        await firebaseApi.setDoc(roomRef, { updatedAt: firebaseApi.serverTimestamp() }, { merge: true });
+        const periodRef = firebaseApi.doc(db, 'rooms', roomId, 'period', 'current');
+        await firebaseApi.setDoc(roomRef, {
+          updatedAt: firebaseApi.serverTimestamp(),
+          roomLabel: roomLabel(),
+          version: 'v10-passphrase-p2p-history'
+        }, { merge: true });
 
-        const messagesQuery = firebaseApi.query(firebaseApi.collection(db, 'rooms', roomId, 'messages'), firebaseApi.orderBy('createdAt', 'asc'), firebaseApi.limit(120));
-        const tasksQuery = firebaseApi.query(firebaseApi.collection(db, 'rooms', roomId, 'tasks'), firebaseApi.orderBy('createdAt', 'desc'), firebaseApi.limit(120));
+        const periodSnap = await firebaseApi.getDoc(periodRef);
+        if (!periodSnap.exists()) {
+          await firebaseApi.setDoc(periodRef, { ...state.period, updatedAt: firebaseApi.serverTimestamp() }, { merge: true });
+        }
+
+        const messagesQuery = firebaseApi.query(firebaseApi.collection(db, 'rooms', roomId, 'messages'), firebaseApi.orderBy('createdAt', 'asc'));
+        const tasksQuery = firebaseApi.query(firebaseApi.collection(db, 'rooms', roomId, 'tasks'), firebaseApi.orderBy('createdAt', 'desc'));
 
         activeUnsubs.push(firebaseApi.onSnapshot(messagesQuery, snap => {
           state.duoMessages = snap.docs.map(d => ({ id: d.id, ...normalizeDoc(d.data()) }));
@@ -905,75 +1044,113 @@
           state.duoTasks = snap.docs.map(d => ({ id: d.id, ...normalizeDoc(d.data()) }));
           saveState(); renderTasks();
         }));
+        activeUnsubs.push(firebaseApi.onSnapshot(periodRef, snap => {
+          if (snap.exists()) {
+            state.period = { ...state.period, ...normalizeDoc(snap.data()) };
+            saveState(); renderPeriod(); fillPeriodForm(); checkPeriodNotification();
+          }
+        }));
+        await updatePresence(db, roomId);
+        presenceTimer = setInterval(() => updatePresence(db, roomId).catch(() => {}), 30000);
+        activeUnsubs.push(firebaseApi.onSnapshot(firebaseApi.collection(db, 'rooms', roomId, 'members'), snap => {
+          memberCount = onlineMembersFromSnap(snap).length || 1;
+          renderSyncStatus();
+        }));
 
         firestoreReady = true;
         firestoreConnecting = false;
         renderSyncStatus();
-        if (showResult) showToast('同步连接成功');
+        if (showResult) showToast('暗号房间连接成功，历史数据会自动同步保存');
       } catch (err) {
         firestoreReady = false;
         firestoreConnecting = false;
         renderSyncStatus();
-        if (showResult) showToast('同步连接失败：' + err.message);
+        if (showResult) showToast('暗号房间连接失败：' + err.message);
       }
     }
 
     function closeRealtime() {
       activeUnsubs.forEach(fn => { try { fn(); } catch (_) {} });
       activeUnsubs = [];
+      if (presenceTimer) clearInterval(presenceTimer);
+      presenceTimer = null;
+      presenceRef = null;
+      memberCount = 0;
+      activeDb = null;
       firestoreReady = false;
+      firestoreConnecting = false;
+      p2pConnections.forEach(conn => { try { conn.close(); } catch (_) {} });
+      p2pConnections = new Map();
+      if (p2pPeer) { try { p2pPeer.destroy(); } catch (_) {} }
+      p2pPeer = null;
+      p2pHost = false;
+      p2pReady = false;
+      p2pConnecting = false;
     }
 
-    function cleanRoomId(roomId) { return String(roomId || '').trim().replace(/[\\/#?%]/g, '-').slice(0, 80); }
+    function cleanRoomId(roomId) { return String(roomId || '').trim().replace(/[\/#?%]/g, '-').slice(0, 80); }
 
     function normalizeDoc(data) {
       const copy = { ...data };
-      ['createdAt', 'doneAt'].forEach(k => {
+      ['createdAt', 'doneAt', 'updatedAt', 'lastSeen'].forEach(k => {
         if (copy[k] && typeof copy[k].toDate === 'function') copy[k] = copy[k].toDate().toISOString();
       });
       return copy;
     }
 
+    function currentRoomId() {
+      return cleanRoomId(state.settings.roomId);
+    }
+
     async function addRemoteMessage(message) {
       const { doc, setDoc, collection, getFirestore, serverTimestamp } = firebaseApi;
-      const db = getFirestore();
+      const db = activeDb || getFirestore();
       const id = message.id || crypto.randomUUID();
-      await setDoc(doc(collection(db, 'rooms', cleanRoomId(state.settings.roomId), 'messages'), id), { ...message, id, createdAt: message.createdAt || new Date().toISOString(), serverAt: serverTimestamp() });
+      await setDoc(doc(collection(db, 'rooms', currentRoomId(), 'messages'), id), { ...message, id, createdAt: message.createdAt || new Date().toISOString(), serverAt: serverTimestamp() });
     }
 
     async function deleteAllRemoteMessages() {
       const { getFirestore, collection, getDocs, deleteDoc, doc } = firebaseApi;
-      const db = getFirestore();
-      const snap = await getDocs(collection(db, 'rooms', cleanRoomId(state.settings.roomId), 'messages'));
-      for (const item of snap.docs) await deleteDoc(doc(db, 'rooms', cleanRoomId(state.settings.roomId), 'messages', item.id));
+      const db = activeDb || getFirestore();
+      const snap = await getDocs(collection(db, 'rooms', currentRoomId(), 'messages'));
+      for (const item of snap.docs) await deleteDoc(doc(db, 'rooms', currentRoomId(), 'messages', item.id));
     }
 
     async function addRemoteTask(task) {
       const { getFirestore, doc, setDoc, collection, serverTimestamp } = firebaseApi;
-      const db = getFirestore();
+      const db = activeDb || getFirestore();
       const id = task.id || crypto.randomUUID();
-      await setDoc(doc(collection(db, 'rooms', cleanRoomId(state.settings.roomId), 'tasks'), id), { ...task, id, createdAt: task.createdAt || new Date().toISOString(), serverAt: serverTimestamp() });
+      await setDoc(doc(collection(db, 'rooms', currentRoomId(), 'tasks'), id), { ...task, id, createdAt: task.createdAt || new Date().toISOString(), serverAt: serverTimestamp() });
     }
 
     async function updateRemoteTask(id, patch) {
       const { getFirestore, doc, updateDoc, serverTimestamp } = firebaseApi;
-      const db = getFirestore();
-      await updateDoc(doc(db, 'rooms', cleanRoomId(state.settings.roomId), 'tasks', id), { ...patch, serverAt: serverTimestamp() });
+      const db = activeDb || getFirestore();
+      await updateDoc(doc(db, 'rooms', currentRoomId(), 'tasks', id), { ...patch, serverAt: serverTimestamp() });
     }
 
     async function deleteRemoteTask(id) {
       const { getFirestore, doc, deleteDoc } = firebaseApi;
-      const db = getFirestore();
-      await deleteDoc(doc(db, 'rooms', cleanRoomId(state.settings.roomId), 'tasks', id));
+      const db = activeDb || getFirestore();
+      await deleteDoc(doc(db, 'rooms', currentRoomId(), 'tasks', id));
+    }
+
+    async function syncPeriodToRemote() {
+      if (!firestoreReady || !firebaseApi) return;
+      const { getFirestore, doc, setDoc, serverTimestamp } = firebaseApi;
+      const db = activeDb || getFirestore();
+      await setDoc(doc(db, 'rooms', currentRoomId(), 'period', 'current'), { ...state.period, updatedAt: serverTimestamp() }, { merge: true });
     }
 
     async function copyRoomInfo() {
-      const text = `My Girl 房间 ID：${state.settings.roomId || ''}\n请在设置里填写同一个 Firebase 配置和房间 ID。`;
+      const text = `My Girl 聊天暗号：请填写你们约定的同一个暗号
+房间尾号：${roomLabel()}
+提示：暗号完全一致才会进入同一房间。`;
       try {
         await navigator.clipboard.writeText(text);
-        showToast('房间信息已复制');
+        showToast('暗号房间信息已复制');
       } catch (_) {
-        prompt('复制房间信息', text);
+        prompt('复制暗号房间信息', text);
       }
     }
 
@@ -1038,14 +1215,21 @@
       document.getElementById('periodBefore').value = state.period.remindBefore ?? 3;
     }
 
-    function savePeriod() {
+    async function savePeriod() {
       const lastDate = document.getElementById('periodLast').value;
       if (!lastDate) return showToast('请填写上次姨妈第一天');
       state.period.lastDate = lastDate;
       state.period.cycleLength = Number(document.getElementById('periodCycle').value) || 28;
       state.period.duration = Number(document.getElementById('periodDuration').value) || 5;
       state.period.remindBefore = Number(document.getElementById('periodBefore').value) || 0;
-      saveState(); renderPeriod(); showToast('姨妈提醒已保存');
+      saveState(); renderPeriod();
+      try {
+        await syncPeriodToRemote();
+        if (!firestoreReady && p2pReady) p2pBroadcast({ type: 'period', period: state.period });
+        showToast(liveReady() ? '姨妈提醒已保存' : '姨妈提醒已保存到本地');
+      } catch (err) {
+        showToast('姨妈提醒本地已保存，但同步失败：' + err.message);
+      }
     }
 
     function requestNotify() {
@@ -1060,7 +1244,7 @@
       const shouldNotify = info.isPeriod || info.daysToNext <= Number(state.period.remindBefore || 3);
       if (shouldNotify && state.period.lastNotifyDate !== today) {
         new Notification('姨妈提醒', { body: info.isPeriod ? '预计姨妈期中，今天也要好好照顾自己。' : `还有 ${info.daysToNext} 天预计来姨妈，记得提前准备。` });
-        state.period.lastNotifyDate = today; saveState();
+        state.period.lastNotifyDate = today; saveState(); syncPeriodToRemote().catch(() => {}); if (p2pReady) p2pBroadcast({ type: 'period', period: state.period });
       }
     }
 
@@ -1072,29 +1256,34 @@
       if (proxyInput) proxyInput.value = s.apiProxyUrl || '';
       document.getElementById('setModel').value = s.deepseekModel || 'deepseek-v4-flash';
       document.getElementById('setPrompt').value = s.systemPrompt || defaultState.settings.systemPrompt;
+      const pairInput = document.getElementById('setPairCode');
+      if (pairInput) pairInput.value = s.pairCode || '';
       document.getElementById('setFirebaseConfig').value = s.firebaseConfigText || '';
-      document.getElementById('setRoomId').value = s.roomId || '';
       document.getElementById('setRole').value = s.myRole || 'me';
       document.getElementById('setTheme').value = s.theme || 'pink';
     }
 
-    function saveSettings() {
+    async function saveSettings() {
       const oldRoom = state.settings.roomId;
       const oldFirebase = state.settings.firebaseConfigText;
+      const oldPair = state.settings.pairCode;
       state.settings.nickname = document.getElementById('setNickname').value.trim() || '宝贝';
       state.settings.partnerName = document.getElementById('setPartner').value.trim() || 'TA';
       const proxyInput = document.getElementById('setProxyUrl');
       state.settings.apiProxyUrl = proxyInput ? proxyInput.value.trim() : '';
       state.settings.deepseekModel = document.getElementById('setModel').value;
       state.settings.systemPrompt = document.getElementById('setPrompt').value.trim() || defaultState.settings.systemPrompt;
+      const pairInput = document.getElementById('setPairCode');
+      state.settings.pairCode = pairInput ? pairInput.value.trim() : '';
       state.settings.firebaseConfigText = document.getElementById('setFirebaseConfig').value.trim();
-      state.settings.roomId = cleanRoomId(document.getElementById('setRoomId').value) || defaultState.settings.roomId;
+      if (state.settings.pairCode) await ensureRoomFromPassphrase();
+      else state.settings.roomId = '';
       state.settings.myRole = document.getElementById('setRole').value;
       state.settings.theme = document.getElementById('setTheme').value;
-      saveState(); applyTheme(); renderHeader(); renderAIChat(); renderDuoChat(); renderTasks(); renderSyncStatus();
+      saveState(); applyTheme(); renderHeader(); renderAIChat(); renderDuoChat(); renderTasks(); renderPeriod(); renderSyncStatus();
       document.getElementById('duoWho').value = state.settings.myRole;
       showToast('设置已保存');
-      if ((oldRoom !== state.settings.roomId || oldFirebase !== state.settings.firebaseConfigText) && state.settings.firebaseConfigText) connectRealtime(false);
+      if ((oldRoom !== state.settings.roomId || oldFirebase !== state.settings.firebaseConfigText || oldPair !== state.settings.pairCode) && state.settings.pairCode) connectRealtime(false);
     }
 
     function exportData() {
@@ -1109,6 +1298,9 @@
       if (!confirm('确定清空全部本地数据吗？这个操作不能恢复。')) return;
       closeRealtime();
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem('my_girl_v9_state');
+      localStorage.removeItem('my_girl_v8_state');
+      localStorage.removeItem('my_girl_v6_state');
       localStorage.removeItem('my_girl_v5_state');
       localStorage.removeItem('my_girl_v4_state');
       localStorage.removeItem('my_girl_v3_state');
@@ -1123,11 +1315,24 @@
       return String(text || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
     }
 
+    function autoSizeTextarea(el) {
+      if (!el) return;
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+    }
+
+    function bindAutoSizeTextareas() {
+      document.querySelectorAll('textarea').forEach(el => {
+        autoSizeTextarea(el);
+        el.addEventListener('input', () => autoSizeTextarea(el));
+      });
+    }
+
     function init() {
-      applyTheme(); renderHeader(); renderAIChat(); renderDuoChat(); renderTasks(); renderPeriod(); fillSettingsForm(); fillPeriodForm(); renderSyncStatus(); checkPeriodNotification();
+      applyTheme(); renderHeader(); renderAIChat(); renderDuoChat(); renderTasks(); renderPeriod(); fillSettingsForm(); fillPeriodForm(); renderSyncStatus(); bindAutoSizeTextareas(); checkPeriodNotification();
       renderAIAttachmentPreview();
       document.getElementById('duoWho').value = state.settings.myRole || 'me';
-      if (state.settings.firebaseConfigText && state.settings.roomId) connectRealtime(false);
+      if (state.settings.pairCode) connectRealtime(false);
     }
 
     init();
