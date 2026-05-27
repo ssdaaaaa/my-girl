@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>🌸 贴心经期守护</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 隐藏滚动条，但保持滚动能力 */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        
+        /* 骨架呼吸动画 */
+        @keyframes pulse-slow {
+            0%, 100% { transform: scale(1); opacity: 0.95; }
+            50% { transform: scale(1.05); opacity: 1; }
+        }
+        .animate-pulse-slow {
+            animation: pulse-slow 3s infinite ease-in-out;
+        }
+
+        /* 蒸汽升腾动画 */
+        @keyframes steam {
+            0% { transform: translateY(0) scale(0.9); opacity: 0.5; }
+            50% { transform: translateY(-10px) scale(1.1); opacity: 0.8; }
+            100% { transform: translateY(-20px) scale(0.9); opacity: 0; }
+        }
+        .steam-line {
+            animation: steam 2s infinite ease-out;
+        }
+
+        /* 限制回弹溢出，模拟App体验 */
+        body {
+            overscroll-behavior-y: contain;
+            background-color: #fff1f2;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+    </style>
+</head>
+<body class="w-full h-screen overflow-hidden flex justify-center items-center">
+
+    <!-- 主容器，模拟手机独立App视口，支持流畅滚动 -->
+    <div id="app" class="w-full max-w-md h-full bg-gradient-to-b from-rose-50 to-pink-100 flex flex-col justify-between overflow-y-auto relative pb-10">
+        
+        <!-- 头部导航栏 -->
+        <header class="sticky top-0 bg-white/80 backdrop-blur-md z-40 px-6 py-4 flex justify-between items-center border-b border-pink-100 shadow-sm">
+            <div class="flex items-center space-x-3">
+                <span class="text-3xl"></span>
+                <div>
+                    <h1 id="header-nickname" class="text-xl font-bold text-gray-800">宝贝小公主</h1>
+                    <p class="text-xs text-rose-400 font-medium">专属经期守护管家</p>
+                </div>
+            </div>
+            <button onclick="toggleSettings()" class="p-2 rounded-full bg-rose-50 hover:bg-rose-100 transition-colors text-rose-500">
+                ⚙️ 设定
+            </button>
+        </header>
+
+        <!-- 主内容滚动区 -->
+        <main class="flex-1 px-4 py-5 space-y-5">
+
+            <!-- 🚨 经期前3天自动特警预警卡片 (默认隐藏，JS动态判定) -->
+            <div id="danger-alert-card" class="hidden bg-gradient-to-br from-amber-400 to-rose-500 rounded-3xl p-5 text-white shadow-lg border border-amber-300 animate-pulse-slow">
+                <div class="flex items-center space-x-2 mb-2">
+                    <span class="text-2xl">🚨</span>
+                    <h3 class="font-bold text-lg">经期特警·贴心预警</h3>
+                </div>
+                <p class="text-sm font-medium leading-relaxed">
+                    大姨妈还有最后 <span id="alert-days-left" class="text-xl font-black underline mx-1">3</span> 天就要到访啦！小公主请注意：
+                    <br><strong class="text-yellow-100">🚫 严禁喝冰水！🚫 严禁吃辣！🚫 不要碰冷水！</strong>
+                    请提前在包包里备好小翅膀（卫生巾）哦！
+                </p>
+                <div class="mt-3 flex justify-end">
+                    <button onclick="dismissWarning()" class="px-4 py-1.5 bg-white/20 hover:bg-white/30 rounded-full text-xs font-bold transition-all">
+                        我知道啦 🙋‍♀️
+                    </button>
+                </div>
+            </div>
+
+            <!-- 💌 云端悄悄话 / 男友今日留言板块 -->
+            <div id="cloud-message-card" class="bg-white rounded-3xl p-5 shadow-sm border border-pink-100 space-y-3 relative overflow-hidden">
+                <div class="absolute right-0 top-0 text-7xl opacity-5 pointer-events-none">💌</div>
+                <div class="flex items-center justify-between">
+                    <span class="px-3 py-1 bg-pink-100 text-pink-600 rounded-full text-xs font-bold">💬 男友今日留言</span>
+                    <span id="cloud-time" class="text-xs text-gray-400">实时同步中</span>
+                </div>
+                <p id="cloud-text" class="text-gray-700 font-medium leading-relaxed italic">
+                    “宝贝，今天也是超级爱你的一天。记住每天要多喝温水哦，我会一直在你身边的！” 🧸
+                </p>
+                <div id="cloud-custom-tips" class="text-xs text-rose-500 bg-rose-50/50 p-2.5 rounded-xl border border-rose-100/50 hidden">
+                    <!-- 云端自定义小提示 -->
+                </div>
+            </div>
+
+            <!-- 🌸 周期倒计时大表盘 -->
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-pink-100 flex flex-col items-center text-center space-y-4">
+                <div class="relative w-48 h-48 flex items-center justify-center">
+                    <!-- 背景圈 -->
+                    <svg class="absolute inset-0 w-full h-full transform -rotate-90">
+                        <circle cx="96" cy="96" r="84" stroke="#ffe4e6" stroke-width="12" fill="transparent" />
+                        <circle id="progress-bar" cx="96" cy="96" r="84" stroke="#fb7185" stroke-width="12" fill="transparent" 
+                                stroke-dasharray="527" stroke-dashoffset="150" stroke-linecap="round" class="transition-all duration-1000" />
+                    </svg>
+                    <!-- 中心文案 -->
+                    <div class="z-10">
+                        <span id="cycle-emoji" class="text-4xl animate-bounce">🌸</span>
+                        <div id="status-text" class="text-sm font-semibold text-gray-400 mt-1">安全期</div>
+                        <div id="countdown-number" class="text-4xl font-extrabold text-gray-800 my-1">12</div>
+                        <div id="countdown-unit" class="text-xs font-bold text-rose-400">天后到来</div>
+                    </div>
+                </div>
+
+                <!-- 简易小数据展示 -->
+                <div class="w-full grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 text-xs">
+                    <div class="text-left pl-3">
+                        <span class="text-gray-400">下次预计:</span>
+                        <p id="next-date-text" class="font-bold text-gray-700">2026-06-15</p>
+                    </div>
+                    <div class="text-right pr-3 border-l border-gray-100">
+                        <span class="text-gray-400">当前周期:</span>
+                        <p id="cycle-length-text" class="font-bold text-gray-700">28 天</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🩺 今日专属调理建议 -->
+            <div class="bg-white rounded-3xl p-5 shadow-sm border border-pink-100 space-y-3">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xl">🩺</span>
+                    <h2 class="text-base font-bold text-gray-800">今日专属健康贴士</h2>
+                </div>
+                <div id="tips-container" class="space-y-2.5 text-sm text-gray-600 leading-relaxed">
+                    <!-- 由 JavaScript 动态填充 -->
+                </div>
+            </div>
+
+            <!-- 💆 互动关怀坊 (揉肚子 & 冲热茶) -->
+            <div class="bg-white rounded-3xl p-5 shadow-sm border border-pink-100 space-y-4">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xl">💖</span>
+                    <h2 class="text-base font-bold text-gray-800">互动暖心关怀</h2>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- 揉肚肚按钮 - 触摸不影响页面滚动 -->
+                    <div id="massage-area" style="touch-action: none;" class="bg-rose-50 hover:bg-rose-100/70 border border-rose-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
+                        <div id="massage-heart" class="text-3xl mb-1 filter drop-shadow">❤️</div>
+                        <span class="text-xs font-bold text-gray-700">揉肚子暖机</span>
+                        <p class="text-[10px] text-gray-400 mt-1">长按/揉动按压心形</p>
+                    </div>
+
+                    <!-- 泡姜茶 -->
+                    <div onclick="brewTea()" class="bg-amber-50 hover:bg-amber-100/70 border border-amber-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all relative overflow-hidden">
+                        <!-- 蒸汽动画 -->
+                        <div id="steam-container" class="absolute top-2 flex justify-center space-x-1 hidden">
+                            <span class="steam-line text-xs">♨️</span>
+                            <span class="steam-line text-xs delay-300">♨️</span>
+                        </div>
+                        <div class="text-3xl mb-1">☕</div>
+                        <span class="text-xs font-bold text-gray-700">泡杯红糖姜茶</span>
+                        <p class="text-[10px] text-gray-400 mt-1">暖烘烘驱走冰冷</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🤵 男友每日关怀打卡任务 (每日自动更新) -->
+            <div class="bg-white rounded-3xl p-5 shadow-sm border border-pink-100 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xl">🧸</span>
+                        <h2 class="text-base font-bold text-gray-800">男朋友今日任务打卡</h2>
+                    </div>
+                    <span class="text-xs bg-rose-50 text-rose-500 px-2 py-0.5 rounded-full font-bold">今日已监督</span>
+                </div>
+                
+                <div class="space-y-3">
+                    <!-- 任务 1 -->
+                    <label class="flex items-start space-x-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-rose-50/30 transition-colors">
+                        <input type="checkbox" id="task-pad" onchange="toggleTask('pad')" class="mt-0.5 w-5 h-5 accent-rose-500 rounded border-gray-300">
+                        <div class="text-xs text-gray-600">
+                            <span class="font-bold text-gray-800">🎒 跑腿囤好卫生巾</span>
+                            <p class="text-[10px] text-gray-400 mt-0.5">备齐日用、夜用、安心裤，去超市找导购挑好的！</p>
+                        </div>
+                    </label>
+
+                    <!-- 任务 2 -->
+                    <label class="flex items-start space-x-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-rose-50/30 transition-colors">
+                        <input type="checkbox" id="task-food" onchange="toggleTask('food')" class="mt-0.5 w-5 h-5 accent-rose-500 rounded border-gray-300">
+                        <div class="text-xs text-gray-600">
+                            <span class="font-bold text-gray-800">🚫 饮食监督不松懈</span>
+                            <p class="text-[10px] text-gray-400 mt-0.5">坚决不准她吃辣、不准喝冰水！准备温热红糖水。</p>
+                        </div>
+                    </label>
+
+                    <!-- 任务 3 -->
+                    <label class="flex items-start space-x-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-rose-50/30 transition-colors">
+                        <input type="checkbox" id="task-water" onchange="toggleTask('water')" class="mt-0.5 w-5 h-5 accent-rose-500 rounded border-gray-300">
+                        <div class="text-xs text-gray-600">
+                            <span class="font-bold text-gray-800">🧼 承包所有冷水家务</span>
+                            <p class="text-[10px] text-gray-400 mt-0.5">绝不能让她洗衣服洗碗，温水洗也不行，男生全包！</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 🥺 一键发送撒娇轰炸 -->
+            <div class="bg-white rounded-3xl p-5 shadow-sm border border-pink-100 space-y-3">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xl">📲</span>
+                    <h2 class="text-base font-bold text-gray-800">一键快捷撒娇呼唤</h2>
+                </div>
+                <p class="text-xs text-gray-400">点击以下文案即可一键复制，快去微信轰炸他：</p>
+                
+                <div class="grid grid-cols-1 gap-2">
+                    <button onclick="copyWhine('肚子痛痛，要大猪蹄子来抱抱揉肚子嘛 🥺❤️')" class="text-left text-xs bg-rose-50 hover:bg-rose-100/50 p-3 rounded-xl border border-rose-100 text-rose-700 font-medium flex justify-between items-center transition-all">
+                        <span>“肚子痛痛，要大猪蹄子抱抱揉揉...”</span>
+                        <span>📋 复制</span>
+                    </button>
+                    <button onclick="copyWhine('警告！警报拉响！你家小公主大姨妈3天内驾到，卫生巾买好了没？不许买错！🌶️❌')" class="text-left text-xs bg-amber-50 hover:bg-amber-100/50 p-3 rounded-xl border border-amber-100 text-amber-800 font-medium flex justify-between items-center transition-all">
+                        <span>“警告！大姨妈前3天预警，快买卫生巾！”</span>
+                        <span>📋 复制</span>
+                    </button>
+                    <button onclick="copyWhine('今天不准洗碗了，冷水不准你让我碰，自觉过来干活 🧼🧼')" class="text-left text-xs bg-blue-50 hover:bg-blue-100/50 p-3 rounded-xl border border-blue-100 text-blue-700 font-medium flex justify-between items-center transition-all">
+                        <span>“今天不准洗碗，自觉过来干活！”</span>
+                        <span>📋 复制</span>
+                    </button>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- ⚙️ 偏好设置模态弹窗 (默认隐藏) -->
+        <div id="settings-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center hidden" onclick="closeSettingsOutside(event)">
+            <div id="settings-panel" class="bg-white w-full max-w-md rounded-t-[2.5rem] p-6 space-y-4 transition-transform duration-300 translate-y-full shadow-2xl" onclick="event.stopPropagation()">
+                <div class="flex justify-between items-center border-b border-gray-100 pb-3">
+                    <h3 class="text-lg font-bold text-gray-800">🔧 贴心管家设置</h3>
+                    <button onclick="toggleSettings()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">✕</button>
+                </div>
+                
+                <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+                    <!-- 昵称设定 -->
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-gray-500">👸 专属尊称 / 昵称</label>
+                        <input type="text" id="setting-nickname" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-rose-400" placeholder="例如：宝贝小公主">
+                    </div>
+
+                    <!-- 上次经期开始日 -->
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-gray-500">📅 上次大姨妈第一天</label>
+                        <input type="date" id="setting-last-date" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-rose-400">
+                    </div>
+
+                    <!-- 周期天数 -->
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-gray-500">🔄 平均周期长度 (通常 28 天)</label>
+                        <input type="number" id="setting-cycle" min="20" max="45" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-rose-400">
+                    </div>
+
+                    <!-- 持续天数 -->
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-gray-500">⏳ 平均姨妈持续时间 (通常 5-7 天)</label>
+                        <input type="number" id="setting-duration" min="2" max="14" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-rose-400">
+                    </div>
+
+                    <!-- 云端留言板链接配置 -->
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-gray-500">🌐 男友云端留言板 JSON 链接 (可选)</label>
+                        <input type="url" id="setting-cloud-url" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-rose-400" placeholder="如 https://username.github.io/my-girl/love.json">
+                        <p class="text-[10px] text-gray-400 leading-normal">用于异地或远程维护。配置后，软件会自动获取你留在网上的专属纸条留言。</p>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button onclick="saveSettings()" class="w-full bg-gradient-to-r from-rose-400 to-pink-500 hover:from-rose-500 hover:to-pink-600 text-white rounded-xl py-3 font-bold text-sm shadow-md transition-all active:scale-95">
+                        保存配置
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🍞 全局吐司提示浮层 -->
+        <div id="toast" class="fixed top-24 left-1/2 transform -translate-x-1/2 bg-gray-900/90 text-white text-xs font-bold px-4 py-3 rounded-full shadow-lg z-50 opacity-0 pointer-events-none transition-all duration-300">
+            提示内容
+        </div>
+    </div>
+
+    <!-- JS 功能控制中心 -->
+    <script>
+        // 1. 初始化本地配置数据
+        const defaultState = {
+            nickname: '宝贝小公主',
+            lastDate: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 默认推算12天前开始
+            cycleLength: 28,
+            periodLength: 5,
+            cloudJsonUrl: './love.json' // 默认拉取同仓库下的留言
+        };
+
+        let state = JSON.parse(localStorage.getItem('my_girl_period_state')) || defaultState;
+
+        // 2. 页面加载完毕后运行
+        window.onload = function() {
+            initApp();
+            fetchCloudMessage();
+            setupMassageInteraction();
+            checkAndResetTasks();
+        };
+
+        // 初始化界面
+        function initApp() {
+            // 设置表单初始值
+            document.getElementById('setting-nickname').value = state.nickname;
+            document.getElementById('setting-last-date').value = state.lastDate;
+            document.getElementById('setting-cycle').value = state.cycleLength;
+            document.getElementById('setting-duration').value = state.periodLength;
+            document.getElementById('setting-cloud-url').value = state.cloudJsonUrl || '';
+
+            // 渲染数据
+            updateUI();
+        }
+
+        // 核心渲染计算逻辑
+        function updateUI() {
+            // 更新昵称
+            document.getElementById('header-nickname').innerText = state.nickname;
+            document.getElementById('cycle-length-text').innerText = `${state.cycleLength} 天`;
+
+            // 计算经期状态
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const lastStartDate = new Date(state.lastDate);
+            lastStartDate.setHours(0,0,0,0);
+
+            const timeDiff = today.getTime() - lastStartDate.getTime();
+            const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+
+            let currentCycleDay = daysDiff % state.cycleLength;
+            if (currentCycleDay < 0) {
+                currentCycleDay += state.cycleLength;
+            }
+
+            // 计算下次来临日期
+            const nextDate = new Date(lastStartDate.getTime() + (Math.floor(daysDiff / state.cycleLength) + (currentCycleDay >= 0 ? 1 : 0)) * state.cycleLength * 24 * 60 * 60 * 1000);
+            document.getElementById('next-date-text').innerText = nextDate.toISOString().split('T')[0];
+
+            let status = "";
+            let countdown = 0;
+            let themeColor = "#fb7185"; // 默认粉色
+            let emoji = "🌸";
+            let unitText = "天后到来";
+
+            // 区分阶段：经期、卵泡期、排卵期、黄体期
+            if (currentCycleDay < state.periodLength) {
+                // 经期中
+                status = "大姨妈期";
+                countdown = state.periodLength - currentCycleDay;
+                themeColor = "#f43f5e"; // 深红
+                emoji = "🩸";
+                unitText = "天后结束";
+            } else {
+                // 非经期，计算距离下次大姨妈
+                countdown = state.cycleLength - currentCycleDay;
+                unitText = "天后到来";
+
+                // 分段估算周期其他状态
+                if (currentCycleDay >= state.periodLength && currentCycleDay < 12) {
+                    status = "安全期 (卵泡期)";
+                    emoji = "🌱";
+                } else if (currentCycleDay >= 12 && currentCycleDay <= 16) {
+                    status = "排卵危险期";
+                    emoji = "🥚";
+                    themeColor = "#f59e0b"; // 橙色
+                } else {
+                    status = "安全期 (黄体期)";
+                    emoji = "🧁";
+                }
+            }
+
+            // 更新仪表盘文字
+            document.getElementById('status-text').innerText = status;
+            document.getElementById('countdown-number').innerText = countdown;
+            document.getElementById('countdown-unit').innerText = unitText;
+            document.getElementById('cycle-emoji').innerText = emoji;
+
+            // 绘制圆圈进度条 (极简数学计算)
+            const circle = document.getElementById('progress-bar');
+            circle.setAttribute('stroke', themeColor);
+            const totalDash = 527; // 2 * PI * 84
+            let progressPercent = 0;
+            if (status === "大姨妈期") {
+                progressPercent = (state.periodLength - countdown) / state.periodLength;
+            } else {
+                progressPercent = (state.cycleLength - state.periodLength - countdown) / (state.cycleLength - state.periodLength);
+            }
+            const offset = totalDash - (progressPercent * totalDash);
+            circle.style.strokeDashoffset = offset;
+
+            // 3. 🚨 重点：自动判定并激活“经期前3天警报”
+            const alertCard = document.getElementById('danger-alert-card');
+            if (status !== "大姨妈期" && countdown <= 3 && countdown > 0) {
+                // 判定为临近3天内！显示警报卡片并自动播放蜂鸣提示
+                alertCard.classList.remove('hidden');
+                document.getElementById('alert-days-left').innerText = countdown;
+                
+                // 为了防止频繁打扰，只在当天首次打开时自动播放温柔音效
+                const hasAlertedToday = localStorage.getItem(`alerted_today_${today.toISOString().split('T')[0]}`);
+                if (!hasAlertedToday) {
+                    playGentleChime();
+                    localStorage.setItem(`alerted_today_${today.toISOString().split('T')[0]}`, 'true');
+                }
+            } else {
+                alertCard.classList.add('hidden');
+            }
+
+            // 4. 🩺 渲染今日专属调理建议
+            renderTips(status);
+        }
+
+        // 渲染调理建议内容 (严禁吃辣不喝冰，买卫生巾等细节全融入)
+        function renderTips(status) {
+            const container = document.getElementById('tips-container');
+            let tipsHTML = "";
+
+            if (status === "大姨妈期") {
+                tipsHTML = `
+                    <div class="flex items-start space-x-2 text-rose-600 font-bold bg-rose-50 p-2.5 rounded-xl border border-rose-200">
+                        <span>❌</span>
+                        <p>严禁喝冰水与一切冷餐饮料，严禁吃辛辣、重咸刺激食品！</p>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span>🧣</span>
+                        <p>严防身体受寒，洗碗洗衣服等冷水工作全让男朋友包揽。</p>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span>🎒</span>
+                        <p>检查包包和家里，备齐日用、夜用、安心裤卫生巾，如果囤货不够，马上一键发消息呼唤男朋友送去！</p>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span>💤</span>
+                        <p>这几天身体很疲累，今晚务必在 11 点前闭眼睡觉，不准熬夜！</p>
+                    </div>
+                `;
+            } else if (document.getElementById('danger-alert-card').classList.contains('hidden') === false) {
+                // 经期前3天预警期
+                tipsHTML = `
+                    <div class="flex items-start space-x-2 text-amber-600 font-bold bg-amber-50 p-2.5 rounded-xl border border-amber-200">
+                        <span>🚨</span>
+                        <p>经期临近！请管住小嘴，从今天起暂停喝冰、吃辣食物。</p>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span>🛍️</span>
+                        <p>赶紧排查卫生巾库存。这时候最适合吩咐男朋友去买小翅膀，锻炼他的求生欲！</p>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span>🧘</span>
+                        <p>乳房可能会酸胀、情绪易波动，做几个拉伸运动，多喝温水暖肚子。</p>
+                    </div>
+                `;
+            } else {
+                // 平常时期
+                tipsHTML = `
+                    <div class="flex items-start space-x-2">
+                        <span>🍇</span>
+                        <p>目前处于正常阶段，建议补充优质蛋白（鱼虾蛋）和新鲜蔬果，维持身体新陈代谢。</p>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span>👟</span>
+                        <p>精力旺盛期，最适合做慢跑、骑行等适度运动，有助于保持健康周期律哦。</p>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span>💧</span>
+                        <p>每天按时补充温水，健康的生理习惯需要提前并在平时慢慢累积。</p>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = tipsHTML;
+        }
+
+        // 温柔的网页合成提示音 (完全免加载MP3)
+        function playGentleChime() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // 第一声：甜美中音
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                gain1.gain.setValueAtTime(0, ctx.currentTime);
+                gain1.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.05);
+                gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+                osc1.start();
+                osc1.stop(ctx.currentTime + 0.45);
+
+                // 第二声：欢快高音
+                setTimeout(() => {
+                    const osc2 = ctx.createOscillator();
+                    const gain2 = ctx.createGain();
+                    osc2.connect(gain2);
+                    gain2.connect(ctx.destination);
+                    osc2.type = 'sine';
+                    osc2.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
+                    gain2.gain.setValueAtTime(0, ctx.currentTime);
+                    gain2.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.05);
+                    gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+                    osc2.start();
+                    osc2.stop(ctx.currentTime + 0.55);
+                }, 120);
+
+            } catch (e) {
+                console.log("音频播放被浏览器拦截，需要用户点击后才可交互：", e);
+            }
+        }
+
+        // 5. 揉肚肚高敏触控交互，阻断滚动
+        function setupMassageInteraction() {
+            const area = document.getElementById('massage-area');
+            const heart = document.getElementById('massage-heart');
+            let isPressing = false;
+            let counter = 0;
+
+            const comforts = [
+                "呼呼~ 痛痛飞走啦！🥰",
+                "乖乖，给你大大的温暖熊抱！🧸",
+                "暖烘烘的，肚子好像舒服多啦 🌸",
+                "不哭不哭，老公会一直陪着你的 💖",
+                "给你揉揉，最疼你啦 🥺"
+            ];
+
+            function startMassage(e) {
+                e.preventDefault();
+                isPressing = true;
+                heart.classList.add('scale-125');
+                heart.style.animation = "pulse-slow 0.6s infinite ease-in-out";
+                showToast("💆 正在给宝贝揉肚子，暖胃机加热中...");
+            }
+
+            function endMassage(e) {
+                if(!isPressing) return;
+                isPressing = false;
+                heart.classList.remove('scale-125');
+                heart.style.animation = "";
+                
+                // 每次揉完展示一句情话
+                const r = comforts[Math.floor(Math.random() * comforts.length)];
+                showToast(r);
+            }
+
+            // 兼顾手机端 Touch 与 PC 端 Mouse
+            area.addEventListener('touchstart', startMassage, {passive: false});
+            area.addEventListener('touchend', endMassage);
+            area.addEventListener('mousedown', startMassage);
+            area.addEventListener('mouseup', endMassage);
+            area.addEventListener('mouseleave', endMassage);
+        }
+
+        // 6. 泡姜茶
+        function brewTea() {
+            const steam = document.getElementById('steam-container');
+            steam.classList.remove('hidden');
+            showToast("☕ 正在冲泡热气腾腾的红糖姜茶...");
+            
+            // 3秒后冲泡完成
+            setTimeout(() => {
+                steam.classList.add('hidden');
+                showToast("☕ 姜茶冲好了！暖烘烘驱寒，快快喝一口 💖");
+            }, 3000);
+        }
+
+        // 7. 男友今日任务状态本地锁定
+        function checkAndResetTasks() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const savedDate = localStorage.getItem('bf_task_date');
+
+            if (savedDate !== todayStr) {
+                // 新的一天，重置任务
+                localStorage.setItem('bf_task_date', todayStr);
+                localStorage.removeItem('bf_task_status');
+                document.getElementById('task-pad').checked = false;
+                document.getElementById('task-food').checked = false;
+                document.getElementById('task-water').checked = false;
+            } else {
+                // 读取今日已保存的打卡状况
+                const status = JSON.parse(localStorage.getItem('bf_task_status')) || { pad: false, food: false, water: false };
+                document.getElementById('task-pad').checked = status.pad;
+                document.getElementById('task-food').checked = status.food;
+                document.getElementById('task-water').checked = status.water;
+            }
+        }
+
+        function toggleTask(type) {
+            const status = JSON.parse(localStorage.getItem('bf_task_status')) || { pad: false, food: false, water: false };
+            
+            if (type === 'pad') status.pad = document.getElementById('task-pad').checked;
+            if (type === 'food') status.food = document.getElementById('task-food').checked;
+            if (type === 'water') status.water = document.getElementById('task-water').checked;
+
+            localStorage.setItem('bf_task_status', JSON.stringify(status));
+            
+            if (status.pad && status.food && status.water) {
+                showToast("🎉 哇！今天的男友表现简直是100分满分老公！💖");
+            } else {
+                showToast("📝 状态已同步更新！");
+            }
+        }
+
+        // 8. 远程拉取 love.json 男友留言板逻辑
+        function fetchCloudMessage() {
+            if (!state.cloudJsonUrl) return;
+
+            // 加上时间戳防缓存机制，确保男友一修改，女友一秒同步
+            const urlWithNoCache = `${state.cloudJsonUrl}?t=${Date.now()}`;
+
+            fetch(urlWithNoCache)
+                .then(response => {
+                    if (!response.ok) throw new Error("加载失败");
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.title) {
+                        document.querySelector('#cloud-message-card span').innerText = data.title;
+                    }
+                    if (data.message) {
+                        document.getElementById('cloud-text').innerText = data.message;
+                    }
+                    if (data.customTips && data.customTips.length > 0) {
+                        const tipsBox = document.getElementById('cloud-custom-tips');
+                        tipsBox.classList.remove('hidden');
+                        tipsBox.innerHTML = data.customTips.map(item => `<div class="mb-1 py-0.5">${item}</div>`).join('');
+                    }
+                    document.getElementById('cloud-time').innerText = "☁️ 远程云端同步成功";
+                })
+                .catch(err => {
+                    console.log("云端配置文件尚未部署或有错，展示本地预存留言：", err);
+                    document.getElementById('cloud-time').innerText = "💡 离线模式";
+                });
+        }
+
+        // 9. 一键发送撒娇复制
+        function copyWhine(text) {
+            // iframe 兼容的传统安全复制手段
+            const tempInput = document.createElement("textarea");
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            
+            try {
+                const success = document.execCommand("copy");
+                if (success) {
+                    showToast("📋 复制成功！快去轰炸大猪蹄子吧 💬");
+                } else {
+                    showToast("❌ 复制失败，请手动在长按文字复制");
+                }
+            } catch (err) {
+                showToast("❌ 复制失败，请手动在长按文字复制");
+            }
+            document.body.removeChild(tempInput);
+        }
+
+        // 10. 全局简易 Toast 吐司提示器
+        let toastTimer = null;
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.opacity = "1";
+            toast.style.pointerEvents = "auto";
+
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.style.opacity = "0";
+                toast.style.pointerEvents = "none";
+            }, 2500);
+        }
+
+        // 11. 偏好设定交互处理
+        function toggleSettings() {
+            const modal = document.getElementById('settings-modal');
+            const panel = document.getElementById('settings-panel');
+            
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    panel.classList.remove('translate-y-full');
+                }, 50);
+            } else {
+                panel.classList.add('translate-y-full');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        function closeSettingsOutside(e) {
+            toggleSettings();
+        }
+
+        // 保存设置
+        function saveSettings() {
+            const nicknameVal = document.getElementById('setting-nickname').value.trim() || '宝贝小公主';
+            const lastDateVal = document.getElementById('setting-last-date').value;
+            const cycleVal = parseInt(document.getElementById('setting-cycle').value) || 28;
+            const durationVal = parseInt(document.getElementById('setting-duration').value) || 5;
+            const cloudUrlVal = document.getElementById('setting-cloud-url').value.trim();
+
+            if (!lastDateVal) {
+                showToast("⚠️ 请设定上次经期的第一天日期哦");
+                return;
+            }
+
+            state = {
+                nickname: nicknameVal,
+                lastDate: lastDateVal,
+                cycleLength: cycleVal,
+                periodLength: durationVal,
+                cloudJsonUrl: cloudUrlVal
+            };
+
+            localStorage.setItem('my_girl_period_state', JSON.stringify(state));
+            
+            updateUI();
+            fetchCloudMessage();
+            toggleSettings();
+            showToast("💾 专属管家配置已完美存盘！");
+        }
+
+        // 关闭前3天警告
+        function dismissWarning() {
+            document.getElementById('danger-alert-card').classList.add('hidden');
+            showToast("🤫 警报已暂时收起，不过不要碰冷水和偷喝冰的哦！");
+        }
+    </script>
+</body>
+</html>
