@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My Girl · AI 对话与双人小窝</title>
+  <title>My Girl · AI 对话与小窝</title>
   <style>
     :root {
       --bg: #fff6f8;
@@ -164,7 +164,7 @@
 
       <section class="page" id="page-us">
         <div class="card">
-          <h2>💬 我们俩的小聊天</h2>
+          <h2>💬 小聊天</h2>
           <div class="status">
             <div><span class="dot" id="syncDot"></span><b id="syncTitle">本地模式</b><div class="small" id="syncText">没有连接云同步时，只保存在当前浏览器。</div></div>
             <button class="btn ghost" onclick="copyRoomInfo()">复制房间</button>
@@ -174,11 +174,6 @@
         <div class="card">
           <h3>聊天记录</h3>
           <div class="chat-box" id="duoChatBox" style="height:36vh; min-height:260px;"></div>
-          <label>选择身份</label>
-          <select id="duoWho">
-            <option value="me">我</option>
-            <option value="ta">TA</option>
-          </select>
           <label>文字内容</label>
           <textarea id="duoText" placeholder="写点想说的话、报备、撒娇、任务反馈都可以～"></textarea>
           <label>提交图片</label>
@@ -196,19 +191,8 @@
           <input id="taskTitle" placeholder="例如：买红糖姜茶 / 拍照报备 / 晚上视频" />
           <label>任务说明</label>
           <textarea id="taskDesc" placeholder="写清楚怎么做、截止时间、要提交什么图片或文字～"></textarea>
-          <div class="grid2">
-            <div>
-              <label>负责人</label>
-              <select id="taskOwner">
-                <option value="me">我</option>
-                <option value="ta">TA</option>
-              </select>
-            </div>
-            <div>
-              <label>截止日期</label>
-              <input id="taskDue" type="date" />
-            </div>
-          </div>
+          <label>截止日期</label>
+          <input id="taskDue" type="date" />
           <div class="btn-row">
             <button class="btn" onclick="addTask()">发布任务</button>
             <button class="btn ghost" onclick="clearDoneTasks()">清理已完成</button>
@@ -259,7 +243,7 @@
           <h2>⚙️ 设置</h2>
           <div class="grid2">
             <div><label>你的昵称</label><input id="setNickname" placeholder="宝贝" /></div>
-            <div><label>TA 的昵称</label><input id="setPartner" placeholder="大猪蹄子" /></div>
+            <div><label>对方昵称</label><input id="setPartner" placeholder="对方" /></div>
           </div>
 
           <div class="divider"></div>
@@ -278,11 +262,6 @@
           <h3>双人同步</h3>
           <label>聊天暗号</label>
           <input id="setPairCode" type="password" placeholder="两个人输入完全相同的暗号，例如：520love2026" />
-          <label>我的身份</label>
-          <select id="setRole">
-            <option value="me">我是“我”</option>
-            <option value="ta">我是“TA”</option>
-          </select>
           <details style="margin-top:12px;">
             <summary class="small" style="cursor:pointer; font-weight:900; color:var(--primary-dark);">高级：云同步配置</summary>
             <label>Firebase 配置 JSON</label>
@@ -331,7 +310,7 @@
     const defaultState = {
       settings: {
         nickname: '宝贝',
-        partnerName: '大猪蹄子',
+        partnerName: '对方',
         deepseekModel: 'deepseek-v4-flash',
         apiProxyUrl: '',
         theme: 'pink',
@@ -339,7 +318,6 @@
         firebaseConfigText: '',
         roomId: '',
         pairCode: '',
-        myRole: 'me'
       },
       aiMessages: [
         { role: 'assistant', content: '嗨～我在这里。' }
@@ -434,7 +412,7 @@
 
     function renderHeader() {
       document.getElementById('appTitle').textContent = `${state.settings.nickname || '宝贝'}小窝`;
-      document.getElementById('appSubtitle').textContent = `${state.settings.partnerName || 'TA'}陪你一起记录`;
+      document.getElementById('appSubtitle').textContent = `${state.settings.partnerName || '对方'}陪你一起记录`;
       const now = new Date();
       document.getElementById('todayChip').textContent = `${now.getMonth() + 1}/${now.getDate()}`;
     }
@@ -717,9 +695,9 @@
       }
       const messages = [...state.duoMessages].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
       box.innerHTML = messages.map(msg => {
-        const isMine = msg.senderId ? msg.senderId === clientId : msg.who === state.settings.myRole;
+        const isMine = msg.senderId ? msg.senderId === clientId : false;
         const side = isMine ? 'me' : 'ta';
-        const name = msg.senderName || (msg.who === 'me' ? state.settings.nickname : state.settings.partnerName) || (isMine ? '我' : 'TA');
+        const name = msg.senderName || (isMine ? state.settings.nickname : state.settings.partnerName) || '对方';
         return `
         <div class="bubble-row ${side}">
           <div>
@@ -780,13 +758,12 @@
     async function sendDuoMessage() {
       const textEl = document.getElementById('duoText');
       const text = textEl.value.trim();
-      const who = document.getElementById('duoWho').value;
       if (!text && !pendingImageData) return showToast('写点文字或选择一张图片再提交～');
       const message = {
         id: crypto.randomUUID(),
-        who,
+        who: 'member',
         senderId: clientId,
-        senderName: who === 'me' ? state.settings.nickname : state.settings.partnerName,
+        senderName: state.settings.nickname || '我',
         text,
         image: pendingImageData,
         createdAt: new Date().toISOString()
@@ -810,7 +787,7 @@
     }
 
     async function clearDuoChat() {
-      if (!confirm('确定清空我们俩的聊天记录吗？')) return;
+      if (!confirm('确定清空聊天记录吗？')) return;
       if (firestoreReady) {
         const ok = confirm('当前是实时同步模式，会删除云端房间里的聊天记录，确定吗？');
         if (!ok) return;
@@ -825,10 +802,9 @@
     async function addTask() {
       const title = document.getElementById('taskTitle').value.trim();
       const desc = document.getElementById('taskDesc').value.trim();
-      const owner = document.getElementById('taskOwner').value;
       const due = document.getElementById('taskDue').value;
       if (!title) return showToast('任务标题不能为空');
-      const task = { id: crypto.randomUUID(), title, desc, owner, due, done: false, createdAt: new Date().toISOString(), doneAt: '' };
+      const task = { id: crypto.randomUUID(), title, desc, due, done: false, createdAt: new Date().toISOString(), doneAt: '' };
       try {
         if (firestoreReady) await addRemoteTask(task);
         else {
@@ -857,7 +833,7 @@
           <div class="task-head">
             <div>
               <div class="task-title">${escapeHtml(task.title)}</div>
-              <div class="small">负责人：${task.owner === 'me' ? escapeHtml(state.settings.nickname) : escapeHtml(state.settings.partnerName)}${task.due ? ` · 截止：${escapeHtml(task.due)}` : ''}</div>
+              <div class="small">${task.due ? `截止：${escapeHtml(task.due)}` : '未设置截止日期'}</div>
             </div>
             <span class="pill">${task.done ? '已完成' : '进行中'}</span>
           </div>
@@ -892,9 +868,9 @@
       if (!task) return;
       const message = {
         id: crypto.randomUUID(),
-        who: task.owner,
+        who: 'member',
         senderId: clientId,
-        senderName: task.owner === 'me' ? state.settings.nickname : state.settings.partnerName,
+        senderName: state.settings.nickname || '我',
         text: `任务反馈：${task.title}\n状态：${task.done ? '已完成' : '进行中'}${task.desc ? `\n说明：${task.desc}` : ''}`,
         image: '',
         createdAt: new Date().toISOString()
@@ -992,8 +968,7 @@
       presenceRef = doc(db, 'rooms', roomId, 'members', clientId);
       await setDoc(presenceRef, {
         id: clientId,
-        name: state.settings.myRole === 'me' ? state.settings.nickname : state.settings.partnerName,
-        role: state.settings.myRole,
+        name: state.settings.nickname,
         lastSeen: serverTimestamp()
       }, { merge: true });
     }
@@ -1259,7 +1234,6 @@
       const pairInput = document.getElementById('setPairCode');
       if (pairInput) pairInput.value = s.pairCode || '';
       document.getElementById('setFirebaseConfig').value = s.firebaseConfigText || '';
-      document.getElementById('setRole').value = s.myRole || 'me';
       document.getElementById('setTheme').value = s.theme || 'pink';
     }
 
@@ -1268,7 +1242,7 @@
       const oldFirebase = state.settings.firebaseConfigText;
       const oldPair = state.settings.pairCode;
       state.settings.nickname = document.getElementById('setNickname').value.trim() || '宝贝';
-      state.settings.partnerName = document.getElementById('setPartner').value.trim() || 'TA';
+      state.settings.partnerName = document.getElementById('setPartner').value.trim() || '对方';
       const proxyInput = document.getElementById('setProxyUrl');
       state.settings.apiProxyUrl = proxyInput ? proxyInput.value.trim() : '';
       state.settings.deepseekModel = document.getElementById('setModel').value;
@@ -1278,10 +1252,8 @@
       state.settings.firebaseConfigText = document.getElementById('setFirebaseConfig').value.trim();
       if (state.settings.pairCode) await ensureRoomFromPassphrase();
       else state.settings.roomId = '';
-      state.settings.myRole = document.getElementById('setRole').value;
       state.settings.theme = document.getElementById('setTheme').value;
       saveState(); applyTheme(); renderHeader(); renderAIChat(); renderDuoChat(); renderTasks(); renderPeriod(); renderSyncStatus();
-      document.getElementById('duoWho').value = state.settings.myRole;
       showToast('设置已保存');
       if ((oldRoom !== state.settings.roomId || oldFirebase !== state.settings.firebaseConfigText || oldPair !== state.settings.pairCode) && state.settings.pairCode) connectRealtime(false);
     }
@@ -1331,7 +1303,6 @@
     function init() {
       applyTheme(); renderHeader(); renderAIChat(); renderDuoChat(); renderTasks(); renderPeriod(); fillSettingsForm(); fillPeriodForm(); renderSyncStatus(); bindAutoSizeTextareas(); checkPeriodNotification();
       renderAIAttachmentPreview();
-      document.getElementById('duoWho').value = state.settings.myRole || 'me';
       if (state.settings.pairCode) connectRealtime(false);
     }
 
