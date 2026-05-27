@@ -64,14 +64,15 @@
     .dot.on { background:#18aa60; }
     .dot.warn-dot { background:#e6a100; }
     .chat-box { height:54vh; min-height:380px; overflow:auto; padding:6px 2px 12px; scroll-behavior:smooth; }
-    .bubble-row { display:flex; margin:9px 0; gap:8px; }
-    .bubble-row.user,.bubble-row.me { justify-content:flex-end; }
-    .bubble-row.assistant,.bubble-row.ta { justify-content:flex-start; }
-    .bubble-row > div { max-width:76%; width:max-content; display:flex; flex-direction:column; }
-    .bubble-row.user > div,.bubble-row.me > div { align-items:flex-end; }
-    .bubble-row.assistant > div,.bubble-row.ta > div { align-items:flex-start; }
-    .bubble { display:inline-block; width:auto; min-width:0; min-height:0; height:auto; max-width:min(100%, 280px); padding:6px 10px; border-radius:16px; font-size:14px; line-height:1.35; text-align:left; white-space:pre-wrap; word-break:break-word; overflow-wrap:anywhere; box-shadow:0 8px 20px rgba(0,0,0,.04); }
-    .bubble:empty { display:none; }
+    .bubble-row { display:flex; flex-direction:column; margin:9px 0; gap:3px; }
+    .bubble-row.user,.bubble-row.me { align-items:flex-end; }
+    .bubble-row.assistant,.bubble-row.ta { align-items:flex-start; }
+    .message-stack { display:flex; flex-direction:column; max-width:76%; width:fit-content; }
+    .bubble-row.user .message-stack,.bubble-row.me .message-stack { align-items:flex-end; }
+    .bubble-row.assistant .message-stack,.bubble-row.ta .message-stack { align-items:flex-start; }
+    .bubble { display:inline-flex !important; flex-direction:column; align-items:flex-start; justify-content:flex-start; flex:0 1 auto; width:fit-content !important; min-width:0 !important; min-height:0 !important; height:auto !important; max-width:100%; padding:7px 12px; border-radius:18px; font-size:14px; line-height:1.42; text-align:left; white-space:pre-line; word-break:break-word; overflow-wrap:anywhere; box-shadow:0 8px 20px rgba(0,0,0,.04); box-sizing:border-box; }
+    .bubble.text-only { max-width:min(75vw, 280px); }
+    .bubble:empty { display:none !important; }
     .bubble.user,.bubble.me { background:linear-gradient(135deg,var(--primary),#ff9dbc); color:white; border-bottom-right-radius:6px; }
     .bubble.assistant,.bubble.ta { background:white; color:var(--text); border:1px solid var(--line); border-bottom-left-radius:6px; }
     .meta { font-size:11px; color:var(--muted); margin-top:3px; }
@@ -114,7 +115,8 @@
     .attachment-thumb { max-width:150px; max-height:110px; object-fit:cover; border-radius:14px; border:1px solid var(--line); margin-top:8px; display:block; }
     .file-btn { display:inline-flex; align-items:center; justify-content:center; }
     .msg-attachments { display:grid; gap:8px; margin-top:8px; }
-    .msg-file { border:1px solid rgba(255,255,255,.45); background:rgba(255,255,255,.18); border-radius:13px; padding:8px 9px; font-size:12px; }
+    .msg-file { border:1px solid rgba(255,255,255,.45); background:rgba(255,255,255,.18); border-radius:13px; padding:8px 9px; font-size:12px; max-width:220px; }
+    .task-file-name,.duo-file-name { margin-top:6px; color:var(--muted); font-size:12px; line-height:1.4; word-break:break-word; }
     .bubble.assistant .msg-file, .bubble.ta .msg-file { border-color:var(--line); background:var(--soft); color:var(--text); }
 
     .duo-card { display:flex; flex-direction:column; min-height:calc(100vh - 260px); }
@@ -226,17 +228,18 @@
           <textarea id="taskDesc" placeholder="写清楚怎么做、截止时间、要提交什么图片或文字～"></textarea>
           <label>截止日期</label>
           <input id="taskDue" type="date" />
-          <label>任务图片</label>
-          <label class="upload-card">🖼️ 上传任务图片
-            <input id="taskImage" class="file-input" type="file" accept="image/*" onchange="previewTaskImage(event)" />
+          <label>任务附件</label>
+          <label class="upload-card">📎 上传任务附件/图片
+            <input id="taskImage" class="file-input" type="file" accept="image/*,.txt,.md,.markdown,.json,.csv,.log,.html,.css,.js,.ts,.jsx,.tsx,.py,.java,.cpp,.c,.go,.rs,.xml,.yaml,.yml,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" onchange="previewTaskAttachment(event)" />
           </label>
           <div class="duo-preview" id="taskImagePreviewBox" style="margin-top:10px;">
-            <div class="small">已选择任务图片，发布后会显示在任务里。</div>
+            <div class="small">已选择任务附件，发布后会显示在任务里。</div>
+            <div class="task-file-name" id="taskFileName"></div>
             <img id="taskImagePreview" alt="任务图片预览" />
           </div>
           <div class="btn-row">
             <button class="btn" onclick="addTask()">发布任务</button>
-            <button class="btn secondary" type="button" onclick="clearTaskImage()">移除图片</button>
+            <button class="btn secondary" type="button" onclick="clearTaskAttachment()">移除附件</button>
             <button class="btn secondary" onclick="clearDoneTasks()">清理已完成</button>
           </div>
         </div>
@@ -384,6 +387,7 @@
     let pendingImageData = '';
     let pendingDuoFile = null;
     let pendingTaskImageData = '';
+    let pendingTaskFile = null;
     let pendingAIAttachments = [];
     let toastTimer = null;
     let firestoreReady = false;
@@ -751,7 +755,8 @@
         const imageHtml = msg.image ? `<img class="msg-img" src="${msg.image}" alt="提交图片" />` : '';
         const fileHtml = msg.file ? `<div class="msg-file"><a href="${msg.file.data}" download="${escapeHtml(msg.file.name || '附件')}">📎 ${escapeHtml(msg.file.name || '附件')}</a><div class="small">${escapeHtml(formatFileSize(msg.file.size || 0))}</div></div>` : '';
         const contentHtml = textHtml + imageHtml + fileHtml;
-        return `<div class="bubble-row ${side}"><div><div class="bubble ${side}">${contentHtml}</div><div class="meta">${escapeHtml(name)} · ${formatDateTime(msg.createdAt)}</div></div></div>`;
+        const bubbleClass = `bubble ${side} ${(!msg.image && !msg.file) ? 'text-only' : ''}`;
+        return `<div class="bubble-row ${side}"><div class="message-stack"><div class="${bubbleClass}">${contentHtml}</div><div class="meta">${escapeHtml(name)} · ${formatDateTime(msg.createdAt)}</div></div></div>`;
       }).join('');
       box.scrollTop = box.scrollHeight;
     }
@@ -807,7 +812,6 @@
     function clearDuoPendingFile(clearInput = true) {
       pendingImageData = '';
       pendingDuoFile = null;
-      pendingTaskImageData = '';
       const input = document.getElementById('duoImage');
       const preview = document.getElementById('duoPreview');
       const box = document.getElementById('duoImagePreviewBox');
@@ -892,34 +896,48 @@
       }
     }
 
-    async function previewTaskImage(event) {
+    async function previewTaskAttachment(event) {
       const file = event.target.files?.[0];
-      clearTaskImage(false);
+      clearTaskAttachment(false);
       if (!file) return;
-      if (!file.type.startsWith('image/')) return showToast('请选择图片文件');
       try {
-        pendingTaskImageData = await compressImage(file, 820, 0.68);
-        if (pendingTaskImageData.length > 650000) {
-          clearTaskImage();
-          return showToast('图片还是太大，换一张小一点的图，避免云端保存失败');
-        }
         const preview = document.getElementById('taskImagePreview');
         const box = document.getElementById('taskImagePreviewBox');
-        if (preview) preview.src = pendingTaskImageData;
+        const fileName = document.getElementById('taskFileName');
+        if (fileName) fileName.textContent = `${file.name} · ${formatFileSize(file.size)}`;
+        if (file.type.startsWith('image/')) {
+          pendingTaskImageData = await compressImage(file, 820, 0.68);
+          if (pendingTaskImageData.length > 650000) {
+            clearTaskAttachment();
+            return showToast('图片还是太大，换一张小一点的图，避免云端保存失败');
+          }
+          if (preview) preview.src = pendingTaskImageData;
+        } else {
+          if (file.size > 520000) {
+            clearTaskAttachment();
+            return showToast('文件太大啦，建议控制在 500KB 内再上传');
+          }
+          const data = await readFileAsDataURL(file);
+          pendingTaskFile = { name: file.name, type: file.type || 'application/octet-stream', size: file.size, data };
+          if (preview) preview.removeAttribute('src');
+        }
         if (box) box.classList.add('show');
       } catch (err) {
-        clearTaskImage();
-        showToast('任务图片读取失败：' + err.message);
+        clearTaskAttachment();
+        showToast('任务附件读取失败：' + err.message);
       }
     }
 
-    function clearTaskImage(clearInput = true) {
+    function clearTaskAttachment(clearInput = true) {
       pendingTaskImageData = '';
+      pendingTaskFile = null;
       const input = document.getElementById('taskImage');
       const preview = document.getElementById('taskImagePreview');
       const box = document.getElementById('taskImagePreviewBox');
+      const fileName = document.getElementById('taskFileName');
       if (clearInput && input) input.value = '';
       if (preview) preview.removeAttribute('src');
+      if (fileName) fileName.textContent = '';
       if (box) box.classList.remove('show');
     }
 
@@ -928,7 +946,7 @@
       const desc = document.getElementById('taskDesc').value.trim();
       const due = document.getElementById('taskDue').value;
       if (!title) return showToast('任务标题不能为空');
-      const task = { id: crypto.randomUUID(), title, desc, due, image: pendingTaskImageData, done: false, createdAt: new Date().toISOString(), doneAt: '' };
+      const task = { id: crypto.randomUUID(), title, desc, due, image: pendingTaskImageData, file: pendingTaskFile, done: false, createdAt: new Date().toISOString(), doneAt: '' };
       try {
         if (firestoreReady) await addRemoteTask(task);
         else {
@@ -939,7 +957,7 @@
         document.getElementById('taskTitle').value = '';
         document.getElementById('taskDesc').value = '';
         document.getElementById('taskDue').value = '';
-        clearTaskImage();
+        clearTaskAttachment();
         showToast(liveReady() ? '任务已发布' : '任务已保存，正在尝试进入暗号房间');
       } catch (err) {
         showToast('发布失败：' + err.message);
@@ -964,9 +982,13 @@
           </div>
           ${task.desc ? `<div class="hint">${escapeHtml(task.desc)}</div>` : ''}
           ${task.image ? `<img class="task-img" src="${task.image}" alt="任务图片" />` : ''}
+          ${task.file ? `<div class="msg-file"><a href="${task.file.data}" download="${escapeHtml(task.file.name || '附件')}">📎 ${escapeHtml(task.file.name || '附件')}</a><div class="small">${escapeHtml(formatFileSize(task.file.size || 0))}</div></div>` : ''}
           <div class="btn-row">
             <button class="btn secondary" onclick="toggleTaskDone('${task.id}')">${task.done ? '标记未完成' : '打卡完成'}</button>
             <button class="btn ghost" onclick="taskToChat('${task.id}')">提交到聊天</button>
+            <label class="btn ghost file-btn">提交附件
+              <input class="file-input" type="file" accept="image/*,.txt,.md,.markdown,.json,.csv,.log,.html,.css,.js,.ts,.jsx,.tsx,.py,.java,.cpp,.c,.go,.rs,.xml,.yaml,.yml,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" onchange="submitTaskAttachment(event, '${task.id}')" />
+            </label>
             <button class="btn ghost" onclick="deleteTask('${task.id}')">删除</button>
           </div>
         </div>`).join('');
@@ -999,6 +1021,7 @@
         senderName: state.settings.nickname || '我',
         text: `任务反馈：${task.title}\n状态：${task.done ? '已完成' : '进行中'}${task.desc ? `\n说明：${task.desc}` : ''}`,
         image: task.image || '',
+        file: task.file || null,
         createdAt: new Date().toISOString()
       };
       try {
@@ -1011,6 +1034,51 @@
         showToast('已提交到聊天记录');
       } catch (err) {
         showToast('提交失败：' + err.message);
+      }
+    }
+
+    async function submitTaskAttachment(event, id) {
+      const task = state.duoTasks.find(t => t.id === id);
+      const file = event.target.files?.[0];
+      if (!task || !file) return;
+      let image = '';
+      let filePayload = null;
+      try {
+        if (file.type.startsWith('image/')) {
+          image = await compressImage(file, 820, 0.68);
+          if (image.length > 650000) {
+            event.target.value = '';
+            return showToast('图片还是太大，换一张小一点的图再提交');
+          }
+        } else {
+          if (file.size > 520000) {
+            event.target.value = '';
+            return showToast('文件太大啦，建议控制在 500KB 内再提交');
+          }
+          const data = await readFileAsDataURL(file);
+          filePayload = { name: file.name, type: file.type || 'application/octet-stream', size: file.size, data };
+        }
+        const message = {
+          id: crypto.randomUUID(),
+          who: 'member',
+          senderId: clientId,
+          senderName: state.settings.nickname || '我',
+          text: `任务附件反馈：${task.title}\n状态：${task.done ? '已完成' : '进行中'}`,
+          image,
+          file: filePayload,
+          createdAt: new Date().toISOString()
+        };
+        if (firestoreReady) await addRemoteMessage(message);
+        else {
+          mergeDuoMessages(message);
+          if (p2pReady) p2pBroadcast({ type: 'message', message });
+        }
+        event.target.value = '';
+        switchTab('us');
+        showToast('任务附件已提交到聊天');
+      } catch (err) {
+        event.target.value = '';
+        showToast('任务附件提交失败：' + err.message);
       }
     }
 
@@ -1406,7 +1474,6 @@
       state = structuredClone(defaultState);
       pendingImageData = '';
       pendingDuoFile = null;
-      pendingTaskImageData = '';
       pendingAIAttachments = [];
       init(); showToast('已恢复默认数据');
     }
