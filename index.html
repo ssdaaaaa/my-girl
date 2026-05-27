@@ -67,14 +67,16 @@
     .bubble-row { display:flex; margin:9px 0; gap:8px; }
     .bubble-row.user,.bubble-row.me { justify-content:flex-end; }
     .bubble-row.assistant,.bubble-row.ta { justify-content:flex-start; }
-    .bubble-row > div { max-width:78%; width:fit-content; display:flex; flex-direction:column; }
+    .bubble-row > div { max-width:76%; width:max-content; display:flex; flex-direction:column; }
     .bubble-row.user > div,.bubble-row.me > div { align-items:flex-end; }
     .bubble-row.assistant > div,.bubble-row.ta > div { align-items:flex-start; }
-    .bubble { display:inline-block; align-self:flex-start; width:fit-content; min-width:0; min-height:0; max-width:100%; padding:7px 11px; border-radius:18px; font-size:14px; line-height:1.45; text-align:left; white-space:pre-wrap; word-break:break-word; overflow-wrap:anywhere; box-shadow:0 8px 20px rgba(0,0,0,.04); }
-    .bubble.user,.bubble.me { align-self:flex-end; background:linear-gradient(135deg,var(--primary),#ff9dbc); color:white; border-bottom-right-radius:6px; }
+    .bubble { display:inline-block; width:auto; min-width:0; min-height:0; height:auto; max-width:min(100%, 280px); padding:6px 10px; border-radius:16px; font-size:14px; line-height:1.35; text-align:left; white-space:pre-wrap; word-break:break-word; overflow-wrap:anywhere; box-shadow:0 8px 20px rgba(0,0,0,.04); }
+    .bubble:empty { display:none; }
+    .bubble.user,.bubble.me { background:linear-gradient(135deg,var(--primary),#ff9dbc); color:white; border-bottom-right-radius:6px; }
     .bubble.assistant,.bubble.ta { background:white; color:var(--text); border:1px solid var(--line); border-bottom-left-radius:6px; }
     .meta { font-size:11px; color:var(--muted); margin-top:3px; }
     .msg-img { max-width:100%; border-radius:14px; margin-top:8px; border:1px solid var(--line); display:block; }
+    .task-img { max-width:180px; max-height:140px; object-fit:cover; border-radius:14px; border:1px solid var(--line); margin-top:8px; display:block; }
     .composer { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end; }
     .ai-composer { grid-template-columns:1fr auto auto; }
     .attach-icon { width:48px; min-width:48px; padding:12px 0; font-size:18px; }
@@ -224,8 +226,17 @@
           <textarea id="taskDesc" placeholder="写清楚怎么做、截止时间、要提交什么图片或文字～"></textarea>
           <label>截止日期</label>
           <input id="taskDue" type="date" />
+          <label>任务图片</label>
+          <label class="upload-card">🖼️ 上传任务图片
+            <input id="taskImage" class="file-input" type="file" accept="image/*" onchange="previewTaskImage(event)" />
+          </label>
+          <div class="duo-preview" id="taskImagePreviewBox" style="margin-top:10px;">
+            <div class="small">已选择任务图片，发布后会显示在任务里。</div>
+            <img id="taskImagePreview" alt="任务图片预览" />
+          </div>
           <div class="btn-row">
             <button class="btn" onclick="addTask()">发布任务</button>
+            <button class="btn secondary" type="button" onclick="clearTaskImage()">移除图片</button>
             <button class="btn secondary" onclick="clearDoneTasks()">清理已完成</button>
           </div>
         </div>
@@ -372,6 +383,7 @@
     let state = loadState();
     let pendingImageData = '';
     let pendingDuoFile = null;
+    let pendingTaskImageData = '';
     let pendingAIAttachments = [];
     let toastTimer = null;
     let firestoreReady = false;
@@ -735,18 +747,11 @@
         const isMine = msg.senderId ? msg.senderId === clientId : false;
         const side = isMine ? 'me' : 'ta';
         const name = msg.senderName || (isMine ? state.settings.nickname : state.settings.partnerName) || '对方';
+        const textHtml = msg.text ? escapeHtml(msg.text) : '';
+        const imageHtml = msg.image ? `<img class="msg-img" src="${msg.image}" alt="提交图片" />` : '';
         const fileHtml = msg.file ? `<div class="msg-file"><a href="${msg.file.data}" download="${escapeHtml(msg.file.name || '附件')}">📎 ${escapeHtml(msg.file.name || '附件')}</a><div class="small">${escapeHtml(formatFileSize(msg.file.size || 0))}</div></div>` : '';
-        return `
-        <div class="bubble-row ${side}">
-          <div>
-            <div class="bubble ${side}">
-              ${msg.text ? escapeHtml(msg.text) : ''}
-              ${msg.image ? `<img class="msg-img" src="${msg.image}" alt="提交图片" />` : ''}
-              ${fileHtml}
-            </div>
-            <div class="meta">${escapeHtml(name)} · ${formatDateTime(msg.createdAt)}</div>
-          </div>
-        </div>`;
+        const contentHtml = textHtml + imageHtml + fileHtml;
+        return `<div class="bubble-row ${side}"><div><div class="bubble ${side}">${contentHtml}</div><div class="meta">${escapeHtml(name)} · ${formatDateTime(msg.createdAt)}</div></div></div>`;
       }).join('');
       box.scrollTop = box.scrollHeight;
     }
@@ -802,6 +807,7 @@
     function clearDuoPendingFile(clearInput = true) {
       pendingImageData = '';
       pendingDuoFile = null;
+      pendingTaskImageData = '';
       const input = document.getElementById('duoImage');
       const preview = document.getElementById('duoPreview');
       const box = document.getElementById('duoImagePreviewBox');
@@ -886,12 +892,43 @@
       }
     }
 
+    async function previewTaskImage(event) {
+      const file = event.target.files?.[0];
+      clearTaskImage(false);
+      if (!file) return;
+      if (!file.type.startsWith('image/')) return showToast('请选择图片文件');
+      try {
+        pendingTaskImageData = await compressImage(file, 820, 0.68);
+        if (pendingTaskImageData.length > 650000) {
+          clearTaskImage();
+          return showToast('图片还是太大，换一张小一点的图，避免云端保存失败');
+        }
+        const preview = document.getElementById('taskImagePreview');
+        const box = document.getElementById('taskImagePreviewBox');
+        if (preview) preview.src = pendingTaskImageData;
+        if (box) box.classList.add('show');
+      } catch (err) {
+        clearTaskImage();
+        showToast('任务图片读取失败：' + err.message);
+      }
+    }
+
+    function clearTaskImage(clearInput = true) {
+      pendingTaskImageData = '';
+      const input = document.getElementById('taskImage');
+      const preview = document.getElementById('taskImagePreview');
+      const box = document.getElementById('taskImagePreviewBox');
+      if (clearInput && input) input.value = '';
+      if (preview) preview.removeAttribute('src');
+      if (box) box.classList.remove('show');
+    }
+
     async function addTask() {
       const title = document.getElementById('taskTitle').value.trim();
       const desc = document.getElementById('taskDesc').value.trim();
       const due = document.getElementById('taskDue').value;
       if (!title) return showToast('任务标题不能为空');
-      const task = { id: crypto.randomUUID(), title, desc, due, done: false, createdAt: new Date().toISOString(), doneAt: '' };
+      const task = { id: crypto.randomUUID(), title, desc, due, image: pendingTaskImageData, done: false, createdAt: new Date().toISOString(), doneAt: '' };
       try {
         if (firestoreReady) await addRemoteTask(task);
         else {
@@ -902,6 +939,7 @@
         document.getElementById('taskTitle').value = '';
         document.getElementById('taskDesc').value = '';
         document.getElementById('taskDue').value = '';
+        clearTaskImage();
         showToast(liveReady() ? '任务已发布' : '任务已保存，正在尝试进入暗号房间');
       } catch (err) {
         showToast('发布失败：' + err.message);
@@ -925,6 +963,7 @@
             <span class="pill">${task.done ? '已完成' : '进行中'}</span>
           </div>
           ${task.desc ? `<div class="hint">${escapeHtml(task.desc)}</div>` : ''}
+          ${task.image ? `<img class="task-img" src="${task.image}" alt="任务图片" />` : ''}
           <div class="btn-row">
             <button class="btn secondary" onclick="toggleTaskDone('${task.id}')">${task.done ? '标记未完成' : '打卡完成'}</button>
             <button class="btn ghost" onclick="taskToChat('${task.id}')">提交到聊天</button>
@@ -959,7 +998,7 @@
         senderId: clientId,
         senderName: state.settings.nickname || '我',
         text: `任务反馈：${task.title}\n状态：${task.done ? '已完成' : '进行中'}${task.desc ? `\n说明：${task.desc}` : ''}`,
-        image: '',
+        image: task.image || '',
         createdAt: new Date().toISOString()
       };
       try {
@@ -1367,6 +1406,7 @@
       state = structuredClone(defaultState);
       pendingImageData = '';
       pendingDuoFile = null;
+      pendingTaskImageData = '';
       pendingAIAttachments = [];
       init(); showToast('已恢复默认数据');
     }
