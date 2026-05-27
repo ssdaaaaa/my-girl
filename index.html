@@ -1,737 +1,946 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>🌸 贴心经期守护</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* 隐藏滚动条，但保持滚动能力 */
-        ::-webkit-scrollbar {
-            display: none;
-        }
-        
-        /* 骨架呼吸动画 */
-        @keyframes pulse-slow {
-            0%, 100% { transform: scale(1); opacity: 0.95; }
-            50% { transform: scale(1.05); opacity: 1; }
-        }
-        .animate-pulse-slow {
-            animation: pulse-slow 3s infinite ease-in-out;
-        }
-
-        /* 蒸汽升腾动画 */
-        @keyframes steam {
-            0% { transform: translateY(0) scale(0.9); opacity: 0.5; }
-            50% { transform: translateY(-10px) scale(1.1); opacity: 0.8; }
-            100% { transform: translateY(-20px) scale(0.9); opacity: 0; }
-        }
-        .steam-line {
-            animation: steam 2s infinite ease-out;
-        }
-
-        /* 限制回弹溢出，模拟App体验 */
-        body {
-            overscroll-behavior-y: contain;
-            background-color: #fff1f2;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Girl · AI 对话与双人小窝</title>
+  <style>
+    :root {
+      --bg: #fff6f8;
+      --card: rgba(255,255,255,.9);
+      --text: #33252b;
+      --muted: #8d6b76;
+      --primary: #ff6f9f;
+      --primary-dark: #e94f84;
+      --soft: #ffe1eb;
+      --line: rgba(255,111,159,.22);
+      --shadow: 0 18px 50px rgba(233,79,132,.16);
+      --radius: 24px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 0%, #ffe2ed 0, transparent 30%),
+        radial-gradient(circle at 92% 12%, #ffe8c7 0, transparent 26%),
+        linear-gradient(180deg, var(--bg), #fffafc);
+    }
+    .app { width: min(100%, 480px); margin: 0 auto; min-height: 100vh; padding: 18px 16px 96px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; }
+    .brand { display:flex; gap:12px; align-items:center; }
+    .avatar { width:52px; height:52px; border-radius:18px; display:grid; place-items:center; background:linear-gradient(135deg,#ff8eb5,#ffd1de); box-shadow:var(--shadow); font-size:26px; }
+    .brand h1 { margin:0; font-size:20px; letter-spacing:-.4px; }
+    .brand p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+    .chip { border:1px solid var(--line); background:var(--card); color:var(--primary-dark); padding:8px 12px; border-radius:999px; font-weight:800; font-size:12px; box-shadow:0 10px 25px rgba(255,111,159,.1); }
+    .page { display:none; animation:fade .25s ease; }
+    .page.active { display:block; }
+    @keyframes fade { from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; backdrop-filter:blur(14px); margin-bottom:14px; }
+    .card h2,.card h3 { margin:0 0 10px; }
+    .card h2 { font-size:18px; }
+    .card h3 { font-size:16px; }
+    .hint { color:var(--muted); line-height:1.55; font-size:13px; margin:6px 0 0; }
+    .warn { background:#fff1c7; border:1px solid #ffd56d; color:#704f00; border-radius:18px; padding:12px; font-size:13px; line-height:1.55; }
+    .danger { background:#ffe4eb; border:1px solid #ffb4c9; color:#8e1742; border-radius:18px; padding:12px; font-size:13px; line-height:1.55; }
+    .empty { color:var(--muted); text-align:center; padding:28px 10px; font-size:13px; }
+    .small { color:var(--muted); font-size:12px; line-height:1.45; }
+    .divider { height:1px; background:var(--line); margin:16px 0; }
+    label { display:block; font-size:13px; color:var(--muted); margin:10px 0 6px; font-weight:800; }
+    textarea,input,select { width:100%; border:1px solid var(--line); background:rgba(255,255,255,.94); border-radius:18px; padding:12px 13px; font-size:14px; outline:none; color:var(--text); transition:.2s; }
+    textarea { resize:vertical; min-height:46px; max-height:180px; }
+    textarea:focus,input:focus,select:focus { border-color:var(--primary); box-shadow:0 0 0 4px rgba(255,111,159,.13); }
+    .btn { border:0; background:linear-gradient(135deg,var(--primary),var(--primary-dark)); color:#fff; border-radius:17px; padding:12px 16px; font-weight:900; cursor:pointer; box-shadow:0 12px 24px rgba(233,79,132,.22); min-height:44px; }
+    .btn:disabled { opacity:.55; cursor:not-allowed; }
+    .btn.secondary { background:white; color:var(--primary-dark); border:1px solid var(--line); box-shadow:none; }
+    .btn.ghost { background:transparent; color:var(--primary-dark); box-shadow:none; border:1px solid var(--line); }
+    .btn.danger-btn { background:linear-gradient(135deg,#ff5e7e,#c92a52); }
+    .btn-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .status { display:flex; align-items:center; justify-content:space-between; gap:10px; border:1px solid var(--line); border-radius:18px; padding:11px 12px; background:rgba(255,255,255,.72); }
+    .dot { width:10px; height:10px; border-radius:50%; background:#bbb; display:inline-block; margin-right:6px; }
+    .dot.on { background:#18aa60; }
+    .dot.warn-dot { background:#e6a100; }
+    .chat-box { height:54vh; min-height:380px; overflow:auto; padding:6px 2px 10px; scroll-behavior:smooth; }
+    .bubble-row { display:flex; margin:10px 0; gap:8px; }
+    .bubble-row.user,.bubble-row.me { justify-content:flex-end; }
+    .bubble-row.assistant,.bubble-row.ta { justify-content:flex-start; }
+    .bubble { max-width:82%; padding:11px 13px; border-radius:18px; font-size:14px; line-height:1.55; white-space:pre-wrap; word-break:break-word; box-shadow:0 8px 20px rgba(0,0,0,.04); }
+    .bubble.user,.bubble.me { background:linear-gradient(135deg,var(--primary),#ff9dbc); color:white; border-bottom-right-radius:6px; }
+    .bubble.assistant,.bubble.ta { background:white; color:var(--text); border:1px solid var(--line); border-bottom-left-radius:6px; }
+    .meta { font-size:11px; color:var(--muted); margin-top:3px; }
+    .msg-img { max-width:100%; border-radius:14px; margin-top:8px; border:1px solid var(--line); }
+    .composer { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end; }
+    .file-preview { display:none; max-width:100%; border-radius:18px; margin-top:10px; border:1px solid var(--line); }
+    .task { display:grid; gap:8px; padding:12px; border-radius:20px; border:1px solid var(--line); background:rgba(255,255,255,.72); margin-top:10px; }
+    .task-head { display:flex; justify-content:space-between; gap:8px; align-items:flex-start; }
+    .task-title { font-weight:950; }
+    .pill { font-size:11px; padding:5px 9px; border-radius:999px; background:var(--soft); color:var(--primary-dark); white-space:nowrap; font-weight:900; }
+    .task.done { opacity:.72; }
+    .task.done .task-title { text-decoration:line-through; }
+    .period-hero { text-align:center; padding:22px 14px; border-radius:28px; background:linear-gradient(135deg,#fff,#ffe2ec); border:1px solid var(--line); box-shadow:var(--shadow); }
+    .period-num { font-size:52px; line-height:1; margin:8px 0; color:var(--primary-dark); font-weight:950; letter-spacing:-2px; }
+    .stat-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px; }
+    .stat { background:white; border:1px solid var(--line); border-radius:20px; padding:10px; text-align:center; }
+    .stat b { display:block; font-size:15px; margin-bottom:4px; }
+    .stat span { font-size:11px; color:var(--muted); }
+    .date-list { display:grid; gap:8px; }
+    .date-item { display:flex; justify-content:space-between; align-items:center; padding:11px 12px; background:white; border:1px solid var(--line); border-radius:16px; }
+    .bottom-nav { position:fixed; left:50%; bottom:14px; transform:translateX(-50%); width:min(calc(100% - 24px),460px); display:grid; grid-template-columns:repeat(4,1fr); gap:6px; background:rgba(255,255,255,.86); border:1px solid var(--line); box-shadow:0 15px 50px rgba(0,0,0,.12); border-radius:26px; padding:7px; backdrop-filter:blur(16px); }
+    .nav-btn { border:0; border-radius:20px; background:transparent; color:var(--muted); padding:8px 4px; font-size:11px; font-weight:900; cursor:pointer; }
+    .nav-btn span { display:block; font-size:19px; margin-bottom:2px; }
+    .nav-btn.active { background:var(--soft); color:var(--primary-dark); }
+    .toast { position:fixed; left:50%; bottom:92px; transform:translateX(-50%) translateY(10px); background:rgba(51,37,43,.92); color:white; padding:10px 14px; border-radius:999px; opacity:0; pointer-events:none; transition:.2s; font-size:13px; z-index:20; max-width:min(420px,calc(100% - 32px)); text-align:center; }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    @media (max-width:390px){ .app{padding-left:12px;padding-right:12px} .grid2{grid-template-columns:1fr} .brand h1{font-size:18px} .chip{display:none} }
+  </style>
 </head>
-<body class="w-full h-screen overflow-hidden flex justify-center items-center">
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="avatar">💗</div>
+        <div>
+          <h1 id="appTitle">宝贝小窝</h1>
+          <p id="appSubtitle">AI 对话 · 双人任务 · 姨妈提醒</p>
+        </div>
+      </div>
+      <div class="chip" id="todayChip">今天</div>
+    </header>
 
-    <!-- 主容器，模拟手机独立App视口，支持流畅滚动 -->
-    <div id="app" class="w-full max-w-md h-full bg-gradient-to-b from-rose-50 to-pink-100 flex flex-col justify-between overflow-y-auto relative pb-10">
-        
-        <!-- 头部导航栏 -->
-        <header class="sticky top-0 bg-white/80 backdrop-blur-md z-40 px-6 py-4 flex justify-between items-center border-b border-pink-100 shadow-sm">
-            <div class="flex items-center space-x-3">
-                <span class="text-3xl"></span>
-                <div>
-                    <h1 id="header-nickname" class="text-xl font-bold text-gray-800">宝贝小公主</h1>
-                    <p class="text-xs text-rose-400 font-medium">专属经期守护管家</p>
-                </div>
-            </div>
-            <button onclick="toggleSettings()" class="p-2 rounded-full bg-rose-50 hover:bg-rose-100 transition-colors text-rose-500">
-                ⚙️ 设定
-            </button>
-        </header>
+    <main>
+      <section class="page active" id="page-ai">
+        <div class="card">
+          <h2>🤖 DeepSeek 对话</h2>
+          <p class="hint">这一页只调用你的后端代理，不在页面里保存或显示 sk 密钥。请先在“设置”里填写代理地址。</p>
+        </div>
+        <div class="card">
+          <div class="chat-box" id="aiChatBox"></div>
+          <div class="composer">
+            <textarea id="aiInput" placeholder="想和 DeepSeek 说什么？" rows="1"></textarea>
+            <button class="btn" id="aiSendBtn" onclick="sendAIMessage()">发送</button>
+          </div>
+          <div class="btn-row">
+            <button class="btn secondary" onclick="quickAI('帮我写一句温柔的晚安消息')">晚安文案</button>
+            <button class="btn secondary" onclick="quickAI('今天有点累，哄哄我')">哄哄我</button>
+            <button class="btn ghost" onclick="clearAIChat()">清空 AI 聊天</button>
+          </div>
+        </div>
+      </section>
 
-        <!-- 主内容滚动区 -->
-        <main class="flex-1 px-4 py-5 space-y-5">
-
-            <!-- 🚨 经期前3天自动特警预警卡片 (默认隐藏，JS动态判定) -->
-            <div id="danger-alert-card" class="hidden bg-gradient-to-br from-amber-400 to-rose-500 rounded-3xl p-5 text-white shadow-lg border border-amber-300 animate-pulse-slow">
-                <div class="flex items-center space-x-2 mb-2">
-                    <span class="text-2xl">🚨</span>
-                    <h3 class="font-bold text-lg">经期特警·贴心预警</h3>
-                </div>
-                <p class="text-sm font-medium leading-relaxed">
-                    大姨妈还有最后 <span id="alert-days-left" class="text-xl font-black underline mx-1">3</span> 天就要到访啦！小公主请注意：
-                    <br><strong class="text-yellow-100">🚫 严禁喝冰水！🚫 严禁吃辣！🚫 不要碰冷水！</strong>
-                    请提前在包包里备好小翅膀（卫生巾）哦！
-                </p>
-                <div class="mt-3 flex justify-end">
-                    <button onclick="dismissWarning()" class="px-4 py-1.5 bg-white/20 hover:bg-white/30 rounded-full text-xs font-bold transition-all">
-                        我知道啦 🙋‍♀️
-                    </button>
-                </div>
-            </div>
-
-            <!-- 💌 云端悄悄话 / 男友今日留言板块 -->
-            <div id="cloud-message-card" class="bg-white rounded-3xl p-5 shadow-sm border border-pink-100 space-y-3 relative overflow-hidden">
-                <div class="absolute right-0 top-0 text-7xl opacity-5 pointer-events-none">💌</div>
-                <div class="flex items-center justify-between">
-                    <span class="px-3 py-1 bg-pink-100 text-pink-600 rounded-full text-xs font-bold">💬 男友今日留言</span>
-                    <span id="cloud-time" class="text-xs text-gray-400">实时同步中</span>
-                </div>
-                <p id="cloud-text" class="text-gray-700 font-medium leading-relaxed italic">
-                    “宝贝，今天也是超级爱你的一天。记住每天要多喝温水哦，我会一直在你身边的！” 🧸
-                </p>
-                <div id="cloud-custom-tips" class="text-xs text-rose-500 bg-rose-50/50 p-2.5 rounded-xl border border-rose-100/50 hidden">
-                    <!-- 云端自定义小提示 -->
-                </div>
-            </div>
-
-            <!-- 🌸 周期倒计时大表盘 -->
-            <div class="bg-white rounded-3xl p-6 shadow-sm border border-pink-100 flex flex-col items-center text-center space-y-4">
-                <div class="relative w-48 h-48 flex items-center justify-center">
-                    <!-- 背景圈 -->
-                    <svg class="absolute inset-0 w-full h-full transform -rotate-90">
-                        <circle cx="96" cy="96" r="84" stroke="#ffe4e6" stroke-width="12" fill="transparent" />
-                        <circle id="progress-bar" cx="96" cy="96" r="84" stroke="#fb7185" stroke-width="12" fill="transparent" 
-                                stroke-dasharray="527" stroke-dashoffset="150" stroke-linecap="round" class="transition-all duration-1000" />
-                    </svg>
-                    <!-- 中心文案 -->
-                    <div class="z-10">
-                        <span id="cycle-emoji" class="text-4xl animate-bounce">🌸</span>
-                        <div id="status-text" class="text-sm font-semibold text-gray-400 mt-1">安全期</div>
-                        <div id="countdown-number" class="text-4xl font-extrabold text-gray-800 my-1">12</div>
-                        <div id="countdown-unit" class="text-xs font-bold text-rose-400">天后到来</div>
-                    </div>
-                </div>
-
-                <!-- 简易小数据展示 -->
-                <div class="w-full grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 text-xs">
-                    <div class="text-left pl-3">
-                        <span class="text-gray-400">下次预计:</span>
-                        <p id="next-date-text" class="font-bold text-gray-700">2026-06-15</p>
-                    </div>
-                    <div class="text-right pr-3 border-l border-gray-100">
-                        <span class="text-gray-400">当前周期:</span>
-                        <p id="cycle-length-text" class="font-bold text-gray-700">28 天</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 🩺 今日专属调理建议 -->
-            <div class="bg-white rounded-3xl p-5 shadow-sm border border-pink-100 space-y-3">
-                <div class="flex items-center space-x-2">
-                    <span class="text-xl">🩺</span>
-                    <h2 class="text-base font-bold text-gray-800">今日专属健康贴士</h2>
-                </div>
-                <div id="tips-container" class="space-y-2.5 text-sm text-gray-600 leading-relaxed">
-                    <!-- 由 JavaScript 动态填充 -->
-                </div>
-            </div>
-
-            <!-- 💆 互动关怀坊 (揉肚子 & 冲热茶) -->
-            <div class="bg-white rounded-3xl p-5 shadow-sm border border-pink-100 space-y-4">
-                <div class="flex items-center space-x-2">
-                    <span class="text-xl">💖</span>
-                    <h2 class="text-base font-bold text-gray-800">互动暖心关怀</h2>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-3">
-                    <!-- 揉肚肚按钮 - 触摸不影响页面滚动 -->
-                    <div id="massage-area" style="touch-action: none;" class="bg-rose-50 hover:bg-rose-100/70 border border-rose-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
-                        <div id="massage-heart" class="text-3xl mb-1 filter drop-shadow">❤️</div>
-                        <span class="text-xs font-bold text-gray-700">揉肚子暖机</span>
-                        <p class="text-[10px] text-gray-400 mt-1">长按/揉动按压心形</p>
-                    </div>
-
-                    <!-- 泡姜茶 -->
-                    <div onclick="brewTea()" class="bg-amber-50 hover:bg-amber-100/70 border border-amber-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all relative overflow-hidden">
-                        <!-- 蒸汽动画 -->
-                        <div id="steam-container" class="absolute top-2 flex justify-center space-x-1 hidden">
-                            <span class="steam-line text-xs">♨️</span>
-                            <span class="steam-line text-xs delay-300">♨️</span>
-                        </div>
-                        <div class="text-3xl mb-1">☕</div>
-                        <span class="text-xs font-bold text-gray-700">泡杯红糖姜茶</span>
-                        <p class="text-[10px] text-gray-400 mt-1">暖烘烘驱走冰冷</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 🤵 男友每日关怀打卡任务 (每日自动更新) -->
-            <div class="bg-white rounded-3xl p-5 shadow-sm border border-pink-100 space-y-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-2">
-                        <span class="text-xl">🧸</span>
-                        <h2 class="text-base font-bold text-gray-800">男朋友今日任务打卡</h2>
-                    </div>
-                    <span class="text-xs bg-rose-50 text-rose-500 px-2 py-0.5 rounded-full font-bold">今日已监督</span>
-                </div>
-                
-                <div class="space-y-3">
-                    <!-- 任务 1 -->
-                    <label class="flex items-start space-x-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-rose-50/30 transition-colors">
-                        <input type="checkbox" id="task-pad" onchange="toggleTask('pad')" class="mt-0.5 w-5 h-5 accent-rose-500 rounded border-gray-300">
-                        <div class="text-xs text-gray-600">
-                            <span class="font-bold text-gray-800">🎒 跑腿囤好卫生巾</span>
-                            <p class="text-[10px] text-gray-400 mt-0.5">备齐日用、夜用、安心裤，去超市找导购挑好的！</p>
-                        </div>
-                    </label>
-
-                    <!-- 任务 2 -->
-                    <label class="flex items-start space-x-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-rose-50/30 transition-colors">
-                        <input type="checkbox" id="task-food" onchange="toggleTask('food')" class="mt-0.5 w-5 h-5 accent-rose-500 rounded border-gray-300">
-                        <div class="text-xs text-gray-600">
-                            <span class="font-bold text-gray-800">🚫 饮食监督不松懈</span>
-                            <p class="text-[10px] text-gray-400 mt-0.5">坚决不准她吃辣、不准喝冰水！准备温热红糖水。</p>
-                        </div>
-                    </label>
-
-                    <!-- 任务 3 -->
-                    <label class="flex items-start space-x-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-rose-50/30 transition-colors">
-                        <input type="checkbox" id="task-water" onchange="toggleTask('water')" class="mt-0.5 w-5 h-5 accent-rose-500 rounded border-gray-300">
-                        <div class="text-xs text-gray-600">
-                            <span class="font-bold text-gray-800">🧼 承包所有冷水家务</span>
-                            <p class="text-[10px] text-gray-400 mt-0.5">绝不能让她洗衣服洗碗，温水洗也不行，男生全包！</p>
-                        </div>
-                    </label>
-                </div>
-            </div>
-
-            <!-- 🥺 一键发送撒娇轰炸 -->
-            <div class="bg-white rounded-3xl p-5 shadow-sm border border-pink-100 space-y-3">
-                <div class="flex items-center space-x-2">
-                    <span class="text-xl">📲</span>
-                    <h2 class="text-base font-bold text-gray-800">一键快捷撒娇呼唤</h2>
-                </div>
-                <p class="text-xs text-gray-400">点击以下文案即可一键复制，快去微信轰炸他：</p>
-                
-                <div class="grid grid-cols-1 gap-2">
-                    <button onclick="copyWhine('肚子痛痛，要大猪蹄子来抱抱揉肚子嘛 🥺❤️')" class="text-left text-xs bg-rose-50 hover:bg-rose-100/50 p-3 rounded-xl border border-rose-100 text-rose-700 font-medium flex justify-between items-center transition-all">
-                        <span>“肚子痛痛，要大猪蹄子抱抱揉揉...”</span>
-                        <span>📋 复制</span>
-                    </button>
-                    <button onclick="copyWhine('警告！警报拉响！你家小公主大姨妈3天内驾到，卫生巾买好了没？不许买错！🌶️❌')" class="text-left text-xs bg-amber-50 hover:bg-amber-100/50 p-3 rounded-xl border border-amber-100 text-amber-800 font-medium flex justify-between items-center transition-all">
-                        <span>“警告！大姨妈前3天预警，快买卫生巾！”</span>
-                        <span>📋 复制</span>
-                    </button>
-                    <button onclick="copyWhine('今天不准洗碗了，冷水不准你让我碰，自觉过来干活 🧼🧼')" class="text-left text-xs bg-blue-50 hover:bg-blue-100/50 p-3 rounded-xl border border-blue-100 text-blue-700 font-medium flex justify-between items-center transition-all">
-                        <span>“今天不准洗碗，自觉过来干活！”</span>
-                        <span>📋 复制</span>
-                    </button>
-                </div>
-            </div>
-
-        </main>
-
-        <!-- ⚙️ 偏好设置模态弹窗 (默认隐藏) -->
-        <div id="settings-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center hidden" onclick="closeSettingsOutside(event)">
-            <div id="settings-panel" class="bg-white w-full max-w-md rounded-t-[2.5rem] p-6 space-y-4 transition-transform duration-300 translate-y-full shadow-2xl" onclick="event.stopPropagation()">
-                <div class="flex justify-between items-center border-b border-gray-100 pb-3">
-                    <h3 class="text-lg font-bold text-gray-800">🔧 贴心管家设置</h3>
-                    <button onclick="toggleSettings()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">✕</button>
-                </div>
-                
-                <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
-                    <!-- 昵称设定 -->
-                    <div class="space-y-1">
-                        <label class="text-xs font-bold text-gray-500">👸 专属尊称 / 昵称</label>
-                        <input type="text" id="setting-nickname" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-rose-400" placeholder="例如：宝贝小公主">
-                    </div>
-
-                    <!-- 上次经期开始日 -->
-                    <div class="space-y-1">
-                        <label class="text-xs font-bold text-gray-500">📅 上次大姨妈第一天</label>
-                        <input type="date" id="setting-last-date" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-rose-400">
-                    </div>
-
-                    <!-- 周期天数 -->
-                    <div class="space-y-1">
-                        <label class="text-xs font-bold text-gray-500">🔄 平均周期长度 (通常 28 天)</label>
-                        <input type="number" id="setting-cycle" min="20" max="45" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-rose-400">
-                    </div>
-
-                    <!-- 持续天数 -->
-                    <div class="space-y-1">
-                        <label class="text-xs font-bold text-gray-500">⏳ 平均姨妈持续时间 (通常 5-7 天)</label>
-                        <input type="number" id="setting-duration" min="2" max="14" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-rose-400">
-                    </div>
-
-                    <!-- 云端留言板链接配置 -->
-                    <div class="space-y-1">
-                        <label class="text-xs font-bold text-gray-500">🌐 男友云端留言板 JSON 链接 (可选)</label>
-                        <input type="url" id="setting-cloud-url" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-rose-400" placeholder="如 https://username.github.io/my-girl/love.json">
-                        <p class="text-[10px] text-gray-400 leading-normal">用于异地或远程维护。配置后，软件会自动获取你留在网上的专属纸条留言。</p>
-                    </div>
-                </div>
-
-                <div class="pt-2">
-                    <button onclick="saveSettings()" class="w-full bg-gradient-to-r from-rose-400 to-pink-500 hover:from-rose-500 hover:to-pink-600 text-white rounded-xl py-3 font-bold text-sm shadow-md transition-all active:scale-95">
-                        保存配置
-                    </button>
-                </div>
-            </div>
+      <section class="page" id="page-us">
+        <div class="card">
+          <h2>💬 我们俩的小聊天</h2>
+          <div class="status">
+            <div><span class="dot" id="syncDot"></span><b id="syncTitle">本地模式</b><div class="small" id="syncText">没有配置 Firebase 时，只保存在当前浏览器。</div></div>
+            <button class="btn ghost" onclick="copyRoomInfo()">复制房间</button>
+          </div>
+          <p class="hint">两个人想互相看到消息：两边都填同一个 Firebase 配置和同一个房间 ID。没有配置时只能自己本机看到。</p>
         </div>
 
-        <!-- 🍞 全局吐司提示浮层 -->
-        <div id="toast" class="fixed top-24 left-1/2 transform -translate-x-1/2 bg-gray-900/90 text-white text-xs font-bold px-4 py-3 rounded-full shadow-lg z-50 opacity-0 pointer-events-none transition-all duration-300">
-            提示内容
+        <div class="card">
+          <h3>聊天记录</h3>
+          <div class="chat-box" id="duoChatBox" style="height:36vh; min-height:260px;"></div>
+          <label>选择身份</label>
+          <select id="duoWho">
+            <option value="me">我</option>
+            <option value="ta">TA</option>
+          </select>
+          <label>文字内容</label>
+          <textarea id="duoText" placeholder="写点想说的话、报备、撒娇、任务反馈都可以～"></textarea>
+          <label>提交图片</label>
+          <input id="duoImage" type="file" accept="image/*" onchange="previewImage(event)" />
+          <img id="duoPreview" class="file-preview" alt="图片预览" />
+          <div class="btn-row">
+            <button class="btn" onclick="sendDuoMessage()">提交文字/图片</button>
+            <button class="btn ghost" onclick="clearDuoChat()">清空聊天</button>
+          </div>
         </div>
-    </div>
 
-    <!-- JS 功能控制中心 -->
-    <script>
-        // 1. 初始化本地配置数据
-        const defaultState = {
-            nickname: '宝贝小公主',
-            lastDate: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 默认推算12天前开始
-            cycleLength: 28,
-            periodLength: 5,
-            cloudJsonUrl: './love.json' // 默认拉取同仓库下的留言
+        <div class="card">
+          <h3>发布任务</h3>
+          <label>任务标题</label>
+          <input id="taskTitle" placeholder="例如：买红糖姜茶 / 拍照报备 / 晚上视频" />
+          <label>任务说明</label>
+          <textarea id="taskDesc" placeholder="写清楚怎么做、截止时间、要提交什么图片或文字～"></textarea>
+          <div class="grid2">
+            <div>
+              <label>负责人</label>
+              <select id="taskOwner">
+                <option value="me">我</option>
+                <option value="ta">TA</option>
+              </select>
+            </div>
+            <div>
+              <label>截止日期</label>
+              <input id="taskDue" type="date" />
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn" onclick="addTask()">发布任务</button>
+            <button class="btn ghost" onclick="clearDoneTasks()">清理已完成</button>
+          </div>
+          <div id="taskList"></div>
+        </div>
+      </section>
+
+      <section class="page" id="page-period">
+        <div class="period-hero">
+          <div class="small" id="periodPhase">预计提醒</div>
+          <div class="period-num" id="periodDays">--</div>
+          <div id="periodText">请先设置上次姨妈日期</div>
+          <div class="stat-row">
+            <div class="stat"><b id="nextDate">--</b><span>下次预计</span></div>
+            <div class="stat"><b id="cycleLen">--</b><span>周期长度</span></div>
+            <div class="stat"><b id="periodLen">--</b><span>持续天数</span></div>
+          </div>
+        </div>
+
+        <div class="card" id="periodAlertCard" style="display:none; margin-top:14px;"><div class="danger" id="periodAlertText"></div></div>
+
+        <div class="card">
+          <h2>🩸 姨妈提醒日期</h2>
+          <div class="grid2">
+            <div><label>上次姨妈第一天</label><input id="periodLast" type="date" /></div>
+            <div><label>平均周期</label><input id="periodCycle" type="number" min="15" max="60" /></div>
+          </div>
+          <div class="grid2">
+            <div><label>持续天数</label><input id="periodDuration" type="number" min="1" max="12" /></div>
+            <div><label>提前几天提醒</label><input id="periodBefore" type="number" min="0" max="14" /></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn" onclick="savePeriod()">保存姨妈提醒</button>
+            <button class="btn secondary" onclick="requestNotify()">开启浏览器提醒</button>
+          </div>
+          <p class="hint">提醒会在打开页面时检查；浏览器通知需要授权。经期预测仅供生活提醒，不用于避孕或医疗判断。</p>
+        </div>
+
+        <div class="card">
+          <h3>未来 6 次预计日期</h3>
+          <div class="date-list" id="futureDates"></div>
+        </div>
+      </section>
+
+      <section class="page" id="page-settings">
+        <div class="card">
+          <h2>⚙️ 设置</h2>
+          <div class="grid2">
+            <div><label>你的昵称</label><input id="setNickname" placeholder="宝贝" /></div>
+            <div><label>TA 的昵称</label><input id="setPartner" placeholder="大猪蹄子" /></div>
+          </div>
+
+          <div class="divider"></div>
+          <h3>DeepSeek</h3>
+          <label>安全代理地址</label>
+          <input id="setProxyUrl" placeholder="例如：https://your-worker.workers.dev/chat" />
+          <label>模型</label>
+          <select id="setModel">
+            <option value="deepseek-v4-flash">deepseek-v4-flash（更快）</option>
+            <option value="deepseek-v4-pro">deepseek-v4-pro（更强）</option>
+          </select>
+          <label>AI 系统提示词</label>
+          <textarea id="setPrompt" rows="4"></textarea>
+          <div class="warn">sk 密钥不放在页面上。把 DeepSeek API Key 配到 Cloudflare Worker/Vercel Function 的环境变量里，网页只填写代理地址。</div>
+
+          <div class="divider"></div>
+          <h3>双人同步</h3>
+          <label>Firebase 配置 JSON</label>
+          <textarea id="setFirebaseConfig" rows="6" placeholder='例如：{"apiKey":"...","authDomain":"...","projectId":"...","appId":"..."}'></textarea>
+          <label>房间 ID</label>
+          <input id="setRoomId" placeholder="例如：love-room-520" />
+          <label>我的身份</label>
+          <select id="setRole">
+            <option value="me">我是“我”</option>
+            <option value="ta">我是“TA”</option>
+          </select>
+          <div class="warn">Firebase 配置不是 DeepSeek sk，可以放前端；但 Firestore 规则要自己限制读写范围。情侣自用可先用随机房间 ID。</div>
+
+          <div class="divider"></div>
+          <label>主题颜色</label>
+          <select id="setTheme">
+            <option value="pink">蜜桃粉</option>
+            <option value="purple">梦幻紫</option>
+            <option value="blue">奶油蓝</option>
+          </select>
+          <div class="btn-row">
+            <button class="btn" onclick="saveSettings()">保存设置</button>
+            <button class="btn secondary" onclick="connectRealtime(true)">测试同步</button>
+            <button class="btn ghost" onclick="exportData()">导出数据</button>
+            <button class="btn danger-btn" onclick="resetAll()">清空全部</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="ai" onclick="switchTab('ai')"><span>🤖</span>DeepSeek</button>
+    <button class="nav-btn" data-tab="us" onclick="switchTab('us')"><span>💬</span>我们俩</button>
+    <button class="nav-btn" data-tab="period" onclick="switchTab('period')"><span>🩸</span>姨妈</button>
+    <button class="nav-btn" data-tab="settings" onclick="switchTab('settings')"><span>⚙️</span>设置</button>
+  </nav>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const STORAGE_KEY = 'my_girl_v3_state';
+    const FIREBASE_VERSION = '10.12.5';
+    const todayISO = () => new Date().toISOString().slice(0, 10);
+
+    const defaultState = {
+      settings: {
+        nickname: '宝贝',
+        partnerName: '大猪蹄子',
+        deepseekModel: 'deepseek-v4-flash',
+        apiProxyUrl: '',
+        theme: 'pink',
+        systemPrompt: '你是一个温柔、可爱、懂得照顾情绪的中文 AI 伴侣。回答要自然、有温度，必要时给出清晰可执行的建议。',
+        firebaseConfigText: '',
+        roomId: 'love-room-' + Math.random().toString(36).slice(2, 8),
+        myRole: 'me'
+      },
+      aiMessages: [
+        { role: 'assistant', content: '嗨～我已经在这里啦。这个页面不会保存 sk 密钥，请先在设置里填写 DeepSeek 代理地址。' }
+      ],
+      duoMessages: [],
+      duoTasks: [],
+      period: {
+        lastDate: '2026-05-18',
+        cycleLength: 28,
+        duration: 5,
+        remindBefore: 3,
+        lastNotifyDate: ''
+      }
+    };
+
+    let state = loadState();
+    let pendingImageData = '';
+    let toastTimer = null;
+    let firestoreReady = false;
+    let firestoreConnecting = false;
+    let firebaseApi = null;
+    let activeUnsubs = [];
+
+    function loadState() {
+      try {
+        const legacy = JSON.parse(localStorage.getItem('my_girl_v2_state') || 'null');
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || legacy;
+        const merged = saved ? deepMerge(structuredClone(defaultState), saved) : structuredClone(defaultState);
+        delete merged.settings.deepseekApiKey;
+        delete merged.settings.apiBaseUrl;
+        return merged;
+      } catch (_) {
+        return structuredClone(defaultState);
+      }
+    }
+
+    function deepMerge(target, source) {
+      Object.keys(source || {}).forEach(key => {
+        if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+          target[key] = deepMerge(target[key] || {}, source[key]);
+        } else {
+          target[key] = source[key];
+        }
+      });
+      return target;
+    }
+
+    function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+    function showToast(message) {
+      const el = document.getElementById('toast');
+      el.textContent = message;
+      el.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('page-' + tab).classList.add('active');
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+      if (tab === 'settings') fillSettingsForm();
+      if (tab === 'period') fillPeriodForm();
+      setTimeout(() => {
+        const box = tab === 'ai' ? document.getElementById('aiChatBox') : document.getElementById('duoChatBox');
+        if (box) box.scrollTop = box.scrollHeight;
+      }, 60);
+    }
+
+    function applyTheme() {
+      const themes = {
+        pink: ['#fff6f8', '#ff6f9f', '#e94f84', '#ffe1eb'],
+        purple: ['#fbf7ff', '#a277ff', '#7c52dd', '#eee4ff'],
+        blue: ['#f5fbff', '#5aa9ff', '#2d7bd8', '#e1f0ff']
+      };
+      const [bg, primary, dark, soft] = themes[state.settings.theme || 'pink'] || themes.pink;
+      document.documentElement.style.setProperty('--bg', bg);
+      document.documentElement.style.setProperty('--primary', primary);
+      document.documentElement.style.setProperty('--primary-dark', dark);
+      document.documentElement.style.setProperty('--soft', soft);
+    }
+
+    function renderHeader() {
+      document.getElementById('appTitle').textContent = `${state.settings.nickname || '宝贝'}小窝`;
+      document.getElementById('appSubtitle').textContent = `${state.settings.partnerName || 'TA'}陪你一起记录`;
+      const now = new Date();
+      document.getElementById('todayChip').textContent = `${now.getMonth() + 1}/${now.getDate()}`;
+    }
+
+    function renderSyncStatus() {
+      const dot = document.getElementById('syncDot');
+      const title = document.getElementById('syncTitle');
+      const text = document.getElementById('syncText');
+      dot.className = 'dot';
+      if (firestoreReady) {
+        dot.classList.add('on');
+        title.textContent = '实时同步中';
+        text.textContent = `房间：${state.settings.roomId || '未设置'} · 两个人填同一个房间 ID 即可互通`;
+      } else if (firestoreConnecting) {
+        dot.classList.add('warn-dot');
+        title.textContent = '正在连接同步';
+        text.textContent = '正在连接 Firebase，请稍等。';
+      } else if (state.settings.firebaseConfigText && state.settings.roomId) {
+        dot.classList.add('warn-dot');
+        title.textContent = '同步未连接';
+        text.textContent = '配置已填写，但尚未连接成功。可去设置里点“测试同步”。';
+      } else {
+        title.textContent = '本地模式';
+        text.textContent = '没有配置 Firebase 时，只保存在当前浏览器。';
+      }
+    }
+
+    function renderAIChat() {
+      const box = document.getElementById('aiChatBox');
+      box.innerHTML = state.aiMessages.map(msg => `
+        <div class="bubble-row ${msg.role === 'user' ? 'user' : 'assistant'}">
+          <div>
+            <div class="bubble ${msg.role === 'user' ? 'user' : 'assistant'}">${escapeHtml(msg.content)}</div>
+            <div class="meta">${msg.role === 'user' ? escapeHtml(state.settings.nickname) : 'DeepSeek'}</div>
+          </div>
+        </div>`).join('');
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function quickAI(text) { document.getElementById('aiInput').value = text; sendAIMessage(); }
+
+    async function sendAIMessage() {
+      const input = document.getElementById('aiInput');
+      const btn = document.getElementById('aiSendBtn');
+      const text = input.value.trim();
+      if (!text) return showToast('先写一句想聊的话～');
+      if (!state.settings.apiProxyUrl.trim()) {
+        switchTab('settings');
+        return showToast('请先填写 DeepSeek 安全代理地址');
+      }
+      state.aiMessages.push({ role: 'user', content: text });
+      input.value = '';
+      renderAIChat(); saveState();
+      btn.disabled = true; btn.textContent = '等待中';
+      state.aiMessages.push({ role: 'assistant', content: '正在想怎么回复你…' });
+      renderAIChat();
+      try {
+        const reply = await callDeepSeek();
+        state.aiMessages[state.aiMessages.length - 1] = { role: 'assistant', content: reply || '我没有收到有效回复，再试一次好吗？' };
+      } catch (err) {
+        state.aiMessages[state.aiMessages.length - 1] = { role: 'assistant', content: `调用失败：${err.message}\n\n请检查安全代理地址是否正确、Worker 是否设置了 DEEPSEEK_API_KEY。` };
+      } finally {
+        btn.disabled = false; btn.textContent = '发送';
+        saveState(); renderAIChat();
+      }
+    }
+
+    async function callDeepSeek() {
+      const endpoint = state.settings.apiProxyUrl.trim();
+      const messages = [
+        { role: 'system', content: state.settings.systemPrompt || defaultState.settings.systemPrompt },
+        ...state.aiMessages.filter(m => m.role === 'user' || m.role === 'assistant').slice(-18).map(m => ({ role: m.role, content: m.content }))
+      ];
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: state.settings.deepseekModel || 'deepseek-v4-flash', messages, stream: false })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error?.message || data.message || `HTTP ${response.status}`);
+      return data.choices?.[0]?.message?.content || data.content || '';
+    }
+
+    function clearAIChat() {
+      if (!confirm('确定清空 AI 聊天记录吗？')) return;
+      state.aiMessages = structuredClone(defaultState.aiMessages);
+      saveState(); renderAIChat();
+    }
+
+    function renderDuoChat() {
+      const box = document.getElementById('duoChatBox');
+      if (!state.duoMessages.length) {
+        box.innerHTML = '<div class="empty">还没有聊天记录，发第一条吧～</div>';
+        return;
+      }
+      const messages = [...state.duoMessages].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+      box.innerHTML = messages.map(msg => `
+        <div class="bubble-row ${msg.who}">
+          <div>
+            <div class="bubble ${msg.who}">
+              ${msg.text ? escapeHtml(msg.text) : ''}
+              ${msg.image ? `<img class="msg-img" src="${msg.image}" alt="提交图片" />` : ''}
+            </div>
+            <div class="meta">${msg.who === 'me' ? escapeHtml(state.settings.nickname) : escapeHtml(state.settings.partnerName)} · ${formatDateTime(msg.createdAt)}</div>
+          </div>
+        </div>`).join('');
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function previewImage(event) {
+      const file = event.target.files?.[0];
+      const preview = document.getElementById('duoPreview');
+      pendingImageData = '';
+      preview.style.display = 'none';
+      if (!file) return;
+      if (!file.type.startsWith('image/')) return showToast('请选择图片文件');
+      try {
+        pendingImageData = await compressImage(file, 900, 0.72);
+        if (pendingImageData.length > 850000) {
+          pendingImageData = '';
+          event.target.value = '';
+          return showToast('图片还是太大，换一张小一点的图');
+        }
+        preview.src = pendingImageData;
+        preview.style.display = 'block';
+      } catch (err) {
+        showToast('图片读取失败：' + err.message);
+      }
+    }
+
+    function compressImage(file, maxSide, quality) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('无法读取图片'));
+        reader.onload = () => {
+          const img = new Image();
+          img.onerror = () => reject(new Error('无法加载图片'));
+          img.onload = () => {
+            const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(img.width * scale));
+            canvas.height = Math.max(1, Math.round(img.height * scale));
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          };
+          img.src = reader.result;
         };
+        reader.readAsDataURL(file);
+      });
+    }
 
-        let state = JSON.parse(localStorage.getItem('my_girl_period_state')) || defaultState;
-
-        // 2. 页面加载完毕后运行
-        window.onload = function() {
-            initApp();
-            fetchCloudMessage();
-            setupMassageInteraction();
-            checkAndResetTasks();
-        };
-
-        // 初始化界面
-        function initApp() {
-            // 设置表单初始值
-            document.getElementById('setting-nickname').value = state.nickname;
-            document.getElementById('setting-last-date').value = state.lastDate;
-            document.getElementById('setting-cycle').value = state.cycleLength;
-            document.getElementById('setting-duration').value = state.periodLength;
-            document.getElementById('setting-cloud-url').value = state.cloudJsonUrl || '';
-
-            // 渲染数据
-            updateUI();
+    async function sendDuoMessage() {
+      const textEl = document.getElementById('duoText');
+      const text = textEl.value.trim();
+      const who = document.getElementById('duoWho').value;
+      if (!text && !pendingImageData) return showToast('写点文字或选择一张图片再提交～');
+      const message = { id: crypto.randomUUID(), who, text, image: pendingImageData, createdAt: new Date().toISOString() };
+      try {
+        if (firestoreReady) await addRemoteMessage(message);
+        else {
+          state.duoMessages.push(message);
+          saveState(); renderDuoChat();
         }
+        textEl.value = '';
+        document.getElementById('duoImage').value = '';
+        document.getElementById('duoPreview').style.display = 'none';
+        pendingImageData = '';
+        showToast(firestoreReady ? '已同步到你们的小聊天' : '已保存到本地聊天');
+      } catch (err) {
+        showToast('发送失败：' + err.message);
+      }
+    }
 
-        // 核心渲染计算逻辑
-        function updateUI() {
-            // 更新昵称
-            document.getElementById('header-nickname').innerText = state.nickname;
-            document.getElementById('cycle-length-text').innerText = `${state.cycleLength} 天`;
+    async function clearDuoChat() {
+      if (!confirm('确定清空我们俩的聊天记录吗？')) return;
+      if (firestoreReady) {
+        const ok = confirm('当前是实时同步模式，会删除云端房间里的聊天记录，确定吗？');
+        if (!ok) return;
+        await deleteAllRemoteMessages();
+      } else {
+        state.duoMessages = [];
+        saveState(); renderDuoChat();
+      }
+    }
 
-            // 计算经期状态
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            const lastStartDate = new Date(state.lastDate);
-            lastStartDate.setHours(0,0,0,0);
-
-            const timeDiff = today.getTime() - lastStartDate.getTime();
-            const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-
-            let currentCycleDay = daysDiff % state.cycleLength;
-            if (currentCycleDay < 0) {
-                currentCycleDay += state.cycleLength;
-            }
-
-            // 计算下次来临日期
-            const nextDate = new Date(lastStartDate.getTime() + (Math.floor(daysDiff / state.cycleLength) + (currentCycleDay >= 0 ? 1 : 0)) * state.cycleLength * 24 * 60 * 60 * 1000);
-            document.getElementById('next-date-text').innerText = nextDate.toISOString().split('T')[0];
-
-            let status = "";
-            let countdown = 0;
-            let themeColor = "#fb7185"; // 默认粉色
-            let emoji = "🌸";
-            let unitText = "天后到来";
-
-            // 区分阶段：经期、卵泡期、排卵期、黄体期
-            if (currentCycleDay < state.periodLength) {
-                // 经期中
-                status = "大姨妈期";
-                countdown = state.periodLength - currentCycleDay;
-                themeColor = "#f43f5e"; // 深红
-                emoji = "🩸";
-                unitText = "天后结束";
-            } else {
-                // 非经期，计算距离下次大姨妈
-                countdown = state.cycleLength - currentCycleDay;
-                unitText = "天后到来";
-
-                // 分段估算周期其他状态
-                if (currentCycleDay >= state.periodLength && currentCycleDay < 12) {
-                    status = "安全期 (卵泡期)";
-                    emoji = "🌱";
-                } else if (currentCycleDay >= 12 && currentCycleDay <= 16) {
-                    status = "排卵危险期";
-                    emoji = "🥚";
-                    themeColor = "#f59e0b"; // 橙色
-                } else {
-                    status = "安全期 (黄体期)";
-                    emoji = "🧁";
-                }
-            }
-
-            // 更新仪表盘文字
-            document.getElementById('status-text').innerText = status;
-            document.getElementById('countdown-number').innerText = countdown;
-            document.getElementById('countdown-unit').innerText = unitText;
-            document.getElementById('cycle-emoji').innerText = emoji;
-
-            // 绘制圆圈进度条 (极简数学计算)
-            const circle = document.getElementById('progress-bar');
-            circle.setAttribute('stroke', themeColor);
-            const totalDash = 527; // 2 * PI * 84
-            let progressPercent = 0;
-            if (status === "大姨妈期") {
-                progressPercent = (state.periodLength - countdown) / state.periodLength;
-            } else {
-                progressPercent = (state.cycleLength - state.periodLength - countdown) / (state.cycleLength - state.periodLength);
-            }
-            const offset = totalDash - (progressPercent * totalDash);
-            circle.style.strokeDashoffset = offset;
-
-            // 3. 🚨 重点：自动判定并激活“经期前3天警报”
-            const alertCard = document.getElementById('danger-alert-card');
-            if (status !== "大姨妈期" && countdown <= 3 && countdown > 0) {
-                // 判定为临近3天内！显示警报卡片并自动播放蜂鸣提示
-                alertCard.classList.remove('hidden');
-                document.getElementById('alert-days-left').innerText = countdown;
-                
-                // 为了防止频繁打扰，只在当天首次打开时自动播放温柔音效
-                const hasAlertedToday = localStorage.getItem(`alerted_today_${today.toISOString().split('T')[0]}`);
-                if (!hasAlertedToday) {
-                    playGentleChime();
-                    localStorage.setItem(`alerted_today_${today.toISOString().split('T')[0]}`, 'true');
-                }
-            } else {
-                alertCard.classList.add('hidden');
-            }
-
-            // 4. 🩺 渲染今日专属调理建议
-            renderTips(status);
+    async function addTask() {
+      const title = document.getElementById('taskTitle').value.trim();
+      const desc = document.getElementById('taskDesc').value.trim();
+      const owner = document.getElementById('taskOwner').value;
+      const due = document.getElementById('taskDue').value;
+      if (!title) return showToast('任务标题不能为空');
+      const task = { id: crypto.randomUUID(), title, desc, owner, due, done: false, createdAt: new Date().toISOString(), doneAt: '' };
+      try {
+        if (firestoreReady) await addRemoteTask(task);
+        else {
+          state.duoTasks.unshift(task);
+          saveState(); renderTasks();
         }
+        document.getElementById('taskTitle').value = '';
+        document.getElementById('taskDesc').value = '';
+        document.getElementById('taskDue').value = '';
+        showToast(firestoreReady ? '任务已同步发布' : '任务已保存到本地');
+      } catch (err) {
+        showToast('发布失败：' + err.message);
+      }
+    }
 
-        // 渲染调理建议内容 (严禁吃辣不喝冰，买卫生巾等细节全融入)
-        function renderTips(status) {
-            const container = document.getElementById('tips-container');
-            let tipsHTML = "";
+    function renderTasks() {
+      const list = document.getElementById('taskList');
+      if (!state.duoTasks.length) {
+        list.innerHTML = '<div class="empty">还没有任务，发布一个小任务吧～</div>';
+        return;
+      }
+      const tasks = [...state.duoTasks].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      list.innerHTML = tasks.map(task => `
+        <div class="task ${task.done ? 'done' : ''}">
+          <div class="task-head">
+            <div>
+              <div class="task-title">${escapeHtml(task.title)}</div>
+              <div class="small">负责人：${task.owner === 'me' ? escapeHtml(state.settings.nickname) : escapeHtml(state.settings.partnerName)}${task.due ? ` · 截止：${escapeHtml(task.due)}` : ''}</div>
+            </div>
+            <span class="pill">${task.done ? '已完成' : '进行中'}</span>
+          </div>
+          ${task.desc ? `<div class="hint">${escapeHtml(task.desc)}</div>` : ''}
+          <div class="btn-row">
+            <button class="btn secondary" onclick="toggleTaskDone('${task.id}')">${task.done ? '标记未完成' : '打卡完成'}</button>
+            <button class="btn ghost" onclick="taskToChat('${task.id}')">提交到聊天</button>
+            <button class="btn ghost" onclick="deleteTask('${task.id}')">删除</button>
+          </div>
+        </div>`).join('');
+    }
 
-            if (status === "大姨妈期") {
-                tipsHTML = `
-                    <div class="flex items-start space-x-2 text-rose-600 font-bold bg-rose-50 p-2.5 rounded-xl border border-rose-200">
-                        <span>❌</span>
-                        <p>严禁喝冰水与一切冷餐饮料，严禁吃辛辣、重咸刺激食品！</p>
-                    </div>
-                    <div class="flex items-start space-x-2">
-                        <span>🧣</span>
-                        <p>严防身体受寒，洗碗洗衣服等冷水工作全让男朋友包揽。</p>
-                    </div>
-                    <div class="flex items-start space-x-2">
-                        <span>🎒</span>
-                        <p>检查包包和家里，备齐日用、夜用、安心裤卫生巾，如果囤货不够，马上一键发消息呼唤男朋友送去！</p>
-                    </div>
-                    <div class="flex items-start space-x-2">
-                        <span>💤</span>
-                        <p>这几天身体很疲累，今晚务必在 11 点前闭眼睡觉，不准熬夜！</p>
-                    </div>
-                `;
-            } else if (document.getElementById('danger-alert-card').classList.contains('hidden') === false) {
-                // 经期前3天预警期
-                tipsHTML = `
-                    <div class="flex items-start space-x-2 text-amber-600 font-bold bg-amber-50 p-2.5 rounded-xl border border-amber-200">
-                        <span>🚨</span>
-                        <p>经期临近！请管住小嘴，从今天起暂停喝冰、吃辣食物。</p>
-                    </div>
-                    <div class="flex items-start space-x-2">
-                        <span>🛍️</span>
-                        <p>赶紧排查卫生巾库存。这时候最适合吩咐男朋友去买小翅膀，锻炼他的求生欲！</p>
-                    </div>
-                    <div class="flex items-start space-x-2">
-                        <span>🧘</span>
-                        <p>乳房可能会酸胀、情绪易波动，做几个拉伸运动，多喝温水暖肚子。</p>
-                    </div>
-                `;
-            } else {
-                // 平常时期
-                tipsHTML = `
-                    <div class="flex items-start space-x-2">
-                        <span>🍇</span>
-                        <p>目前处于正常阶段，建议补充优质蛋白（鱼虾蛋）和新鲜蔬果，维持身体新陈代谢。</p>
-                    </div>
-                    <div class="flex items-start space-x-2">
-                        <span>👟</span>
-                        <p>精力旺盛期，最适合做慢跑、骑行等适度运动，有助于保持健康周期律哦。</p>
-                    </div>
-                    <div class="flex items-start space-x-2">
-                        <span>💧</span>
-                        <p>每天按时补充温水，健康的生理习惯需要提前并在平时慢慢累积。</p>
-                    </div>
-                `;
-            }
-
-            container.innerHTML = tipsHTML;
+    async function toggleTaskDone(id) {
+      const task = state.duoTasks.find(t => t.id === id);
+      if (!task) return;
+      const patch = { done: !task.done, doneAt: !task.done ? new Date().toISOString() : '' };
+      try {
+        if (firestoreReady) await updateRemoteTask(id, patch);
+        else {
+          Object.assign(task, patch);
+          saveState(); renderTasks();
         }
+        showToast(patch.done ? '任务完成啦，表现不错！' : '已改回进行中');
+      } catch (err) {
+        showToast('更新失败：' + err.message);
+      }
+    }
 
-        // 温柔的网页合成提示音 (完全免加载MP3)
-        function playGentleChime() {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                
-                // 第一声：甜美中音
-                const osc1 = ctx.createOscillator();
-                const gain1 = ctx.createGain();
-                osc1.connect(gain1);
-                gain1.connect(ctx.destination);
-                osc1.type = 'sine';
-                osc1.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
-                gain1.gain.setValueAtTime(0, ctx.currentTime);
-                gain1.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.05);
-                gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-                osc1.start();
-                osc1.stop(ctx.currentTime + 0.45);
-
-                // 第二声：欢快高音
-                setTimeout(() => {
-                    const osc2 = ctx.createOscillator();
-                    const gain2 = ctx.createGain();
-                    osc2.connect(gain2);
-                    gain2.connect(ctx.destination);
-                    osc2.type = 'sine';
-                    osc2.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
-                    gain2.gain.setValueAtTime(0, ctx.currentTime);
-                    gain2.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.05);
-                    gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-                    osc2.start();
-                    osc2.stop(ctx.currentTime + 0.55);
-                }, 120);
-
-            } catch (e) {
-                console.log("音频播放被浏览器拦截，需要用户点击后才可交互：", e);
-            }
+    async function taskToChat(id) {
+      const task = state.duoTasks.find(t => t.id === id);
+      if (!task) return;
+      const message = {
+        id: crypto.randomUUID(),
+        who: task.owner,
+        text: `任务反馈：${task.title}\n状态：${task.done ? '已完成' : '进行中'}${task.desc ? `\n说明：${task.desc}` : ''}`,
+        image: '',
+        createdAt: new Date().toISOString()
+      };
+      try {
+        if (firestoreReady) await addRemoteMessage(message);
+        else {
+          state.duoMessages.push(message);
+          saveState(); renderDuoChat();
         }
+        switchTab('us');
+        showToast('已提交到聊天记录');
+      } catch (err) {
+        showToast('提交失败：' + err.message);
+      }
+    }
 
-        // 5. 揉肚肚高敏触控交互，阻断滚动
-        function setupMassageInteraction() {
-            const area = document.getElementById('massage-area');
-            const heart = document.getElementById('massage-heart');
-            let isPressing = false;
-            let counter = 0;
-
-            const comforts = [
-                "呼呼~ 痛痛飞走啦！🥰",
-                "乖乖，给你大大的温暖熊抱！🧸",
-                "暖烘烘的，肚子好像舒服多啦 🌸",
-                "不哭不哭，老公会一直陪着你的 💖",
-                "给你揉揉，最疼你啦 🥺"
-            ];
-
-            function startMassage(e) {
-                e.preventDefault();
-                isPressing = true;
-                heart.classList.add('scale-125');
-                heart.style.animation = "pulse-slow 0.6s infinite ease-in-out";
-                showToast("💆 正在给宝贝揉肚子，暖胃机加热中...");
-            }
-
-            function endMassage(e) {
-                if(!isPressing) return;
-                isPressing = false;
-                heart.classList.remove('scale-125');
-                heart.style.animation = "";
-                
-                // 每次揉完展示一句情话
-                const r = comforts[Math.floor(Math.random() * comforts.length)];
-                showToast(r);
-            }
-
-            // 兼顾手机端 Touch 与 PC 端 Mouse
-            area.addEventListener('touchstart', startMassage, {passive: false});
-            area.addEventListener('touchend', endMassage);
-            area.addEventListener('mousedown', startMassage);
-            area.addEventListener('mouseup', endMassage);
-            area.addEventListener('mouseleave', endMassage);
+    async function deleteTask(id) {
+      try {
+        if (firestoreReady) await deleteRemoteTask(id);
+        else {
+          state.duoTasks = state.duoTasks.filter(t => t.id !== id);
+          saveState(); renderTasks();
         }
+      } catch (err) {
+        showToast('删除失败：' + err.message);
+      }
+    }
 
-        // 6. 泡姜茶
-        function brewTea() {
-            const steam = document.getElementById('steam-container');
-            steam.classList.remove('hidden');
-            showToast("☕ 正在冲泡热气腾腾的红糖姜茶...");
-            
-            // 3秒后冲泡完成
-            setTimeout(() => {
-                steam.classList.add('hidden');
-                showToast("☕ 姜茶冲好了！暖烘烘驱寒，快快喝一口 💖");
-            }, 3000);
+    async function clearDoneTasks() {
+      const doneTasks = state.duoTasks.filter(t => t.done);
+      try {
+        if (firestoreReady) {
+          for (const task of doneTasks) await deleteRemoteTask(task.id);
+        } else {
+          state.duoTasks = state.duoTasks.filter(t => !t.done);
+          saveState(); renderTasks();
         }
+        showToast('已清理完成任务');
+      } catch (err) {
+        showToast('清理失败：' + err.message);
+      }
+    }
 
-        // 7. 男友今日任务状态本地锁定
-        function checkAndResetTasks() {
-            const todayStr = new Date().toISOString().split('T')[0];
-            const savedDate = localStorage.getItem('bf_task_date');
+    function parseFirebaseConfig() {
+      const text = (state.settings.firebaseConfigText || '').trim();
+      if (!text) return null;
+      const config = JSON.parse(text);
+      if (!config.apiKey || !config.projectId || !config.appId) throw new Error('Firebase 配置缺少 apiKey/projectId/appId');
+      return config;
+    }
 
-            if (savedDate !== todayStr) {
-                // 新的一天，重置任务
-                localStorage.setItem('bf_task_date', todayStr);
-                localStorage.removeItem('bf_task_status');
-                document.getElementById('task-pad').checked = false;
-                document.getElementById('task-food').checked = false;
-                document.getElementById('task-water').checked = false;
-            } else {
-                // 读取今日已保存的打卡状况
-                const status = JSON.parse(localStorage.getItem('bf_task_status')) || { pad: false, food: false, water: false };
-                document.getElementById('task-pad').checked = status.pad;
-                document.getElementById('task-food').checked = status.food;
-                document.getElementById('task-water').checked = status.water;
-            }
+    async function connectRealtime(showResult = false) {
+      closeRealtime();
+      firestoreReady = false;
+      firestoreConnecting = true;
+      renderSyncStatus();
+      try {
+        const config = parseFirebaseConfig();
+        const roomId = cleanRoomId(state.settings.roomId);
+        if (!config || !roomId) throw new Error('请填写 Firebase 配置和房间 ID');
+        if (!firebaseApi) {
+          const appMod = await import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-app.js`);
+          const fsMod = await import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-firestore.js`);
+          firebaseApi = { ...appMod, ...fsMod };
         }
+        const appName = 'my-girl-' + config.projectId;
+        const app = firebaseApi.getApps().find(a => a.name === appName) || firebaseApi.initializeApp(config, appName);
+        const db = firebaseApi.getFirestore(app);
+        const roomRef = firebaseApi.doc(db, 'rooms', roomId);
+        await firebaseApi.setDoc(roomRef, { updatedAt: firebaseApi.serverTimestamp() }, { merge: true });
 
-        function toggleTask(type) {
-            const status = JSON.parse(localStorage.getItem('bf_task_status')) || { pad: false, food: false, water: false };
-            
-            if (type === 'pad') status.pad = document.getElementById('task-pad').checked;
-            if (type === 'food') status.food = document.getElementById('task-food').checked;
-            if (type === 'water') status.water = document.getElementById('task-water').checked;
+        const messagesQuery = firebaseApi.query(firebaseApi.collection(db, 'rooms', roomId, 'messages'), firebaseApi.orderBy('createdAt', 'asc'), firebaseApi.limit(120));
+        const tasksQuery = firebaseApi.query(firebaseApi.collection(db, 'rooms', roomId, 'tasks'), firebaseApi.orderBy('createdAt', 'desc'), firebaseApi.limit(120));
 
-            localStorage.setItem('bf_task_status', JSON.stringify(status));
-            
-            if (status.pad && status.food && status.water) {
-                showToast("🎉 哇！今天的男友表现简直是100分满分老公！💖");
-            } else {
-                showToast("📝 状态已同步更新！");
-            }
-        }
+        activeUnsubs.push(firebaseApi.onSnapshot(messagesQuery, snap => {
+          state.duoMessages = snap.docs.map(d => ({ id: d.id, ...normalizeDoc(d.data()) }));
+          saveState(); renderDuoChat();
+        }));
+        activeUnsubs.push(firebaseApi.onSnapshot(tasksQuery, snap => {
+          state.duoTasks = snap.docs.map(d => ({ id: d.id, ...normalizeDoc(d.data()) }));
+          saveState(); renderTasks();
+        }));
 
-        // 8. 远程拉取 love.json 男友留言板逻辑
-        function fetchCloudMessage() {
-            if (!state.cloudJsonUrl) return;
+        firestoreReady = true;
+        firestoreConnecting = false;
+        renderSyncStatus();
+        if (showResult) showToast('同步连接成功');
+      } catch (err) {
+        firestoreReady = false;
+        firestoreConnecting = false;
+        renderSyncStatus();
+        if (showResult) showToast('同步连接失败：' + err.message);
+      }
+    }
 
-            // 加上时间戳防缓存机制，确保男友一修改，女友一秒同步
-            const urlWithNoCache = `${state.cloudJsonUrl}?t=${Date.now()}`;
+    function closeRealtime() {
+      activeUnsubs.forEach(fn => { try { fn(); } catch (_) {} });
+      activeUnsubs = [];
+      firestoreReady = false;
+    }
 
-            fetch(urlWithNoCache)
-                .then(response => {
-                    if (!response.ok) throw new Error("加载失败");
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.title) {
-                        document.querySelector('#cloud-message-card span').innerText = data.title;
-                    }
-                    if (data.message) {
-                        document.getElementById('cloud-text').innerText = data.message;
-                    }
-                    if (data.customTips && data.customTips.length > 0) {
-                        const tipsBox = document.getElementById('cloud-custom-tips');
-                        tipsBox.classList.remove('hidden');
-                        tipsBox.innerHTML = data.customTips.map(item => `<div class="mb-1 py-0.5">${item}</div>`).join('');
-                    }
-                    document.getElementById('cloud-time').innerText = "☁️ 远程云端同步成功";
-                })
-                .catch(err => {
-                    console.log("云端配置文件尚未部署或有错，展示本地预存留言：", err);
-                    document.getElementById('cloud-time').innerText = "💡 离线模式";
-                });
-        }
+    function cleanRoomId(roomId) { return String(roomId || '').trim().replace(/[\\/#?%]/g, '-').slice(0, 80); }
 
-        // 9. 一键发送撒娇复制
-        function copyWhine(text) {
-            // iframe 兼容的传统安全复制手段
-            const tempInput = document.createElement("textarea");
-            tempInput.value = text;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            
-            try {
-                const success = document.execCommand("copy");
-                if (success) {
-                    showToast("📋 复制成功！快去轰炸大猪蹄子吧 💬");
-                } else {
-                    showToast("❌ 复制失败，请手动在长按文字复制");
-                }
-            } catch (err) {
-                showToast("❌ 复制失败，请手动在长按文字复制");
-            }
-            document.body.removeChild(tempInput);
-        }
+    function normalizeDoc(data) {
+      const copy = { ...data };
+      ['createdAt', 'doneAt'].forEach(k => {
+        if (copy[k] && typeof copy[k].toDate === 'function') copy[k] = copy[k].toDate().toISOString();
+      });
+      return copy;
+    }
 
-        // 10. 全局简易 Toast 吐司提示器
-        let toastTimer = null;
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.innerText = msg;
-            toast.style.opacity = "1";
-            toast.style.pointerEvents = "auto";
+    async function addRemoteMessage(message) {
+      const { doc, setDoc, collection, getFirestore, serverTimestamp } = firebaseApi;
+      const db = getFirestore();
+      const id = message.id || crypto.randomUUID();
+      await setDoc(doc(collection(db, 'rooms', cleanRoomId(state.settings.roomId), 'messages'), id), { ...message, id, createdAt: message.createdAt || new Date().toISOString(), serverAt: serverTimestamp() });
+    }
 
-            clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => {
-                toast.style.opacity = "0";
-                toast.style.pointerEvents = "none";
-            }, 2500);
-        }
+    async function deleteAllRemoteMessages() {
+      const { getFirestore, collection, getDocs, deleteDoc, doc } = firebaseApi;
+      const db = getFirestore();
+      const snap = await getDocs(collection(db, 'rooms', cleanRoomId(state.settings.roomId), 'messages'));
+      for (const item of snap.docs) await deleteDoc(doc(db, 'rooms', cleanRoomId(state.settings.roomId), 'messages', item.id));
+    }
 
-        // 11. 偏好设定交互处理
-        function toggleSettings() {
-            const modal = document.getElementById('settings-modal');
-            const panel = document.getElementById('settings-panel');
-            
-            if (modal.classList.contains('hidden')) {
-                modal.classList.remove('hidden');
-                setTimeout(() => {
-                    panel.classList.remove('translate-y-full');
-                }, 50);
-            } else {
-                panel.classList.add('translate-y-full');
-                setTimeout(() => {
-                    modal.classList.add('hidden');
-                }, 300);
-            }
-        }
+    async function addRemoteTask(task) {
+      const { getFirestore, doc, setDoc, collection, serverTimestamp } = firebaseApi;
+      const db = getFirestore();
+      const id = task.id || crypto.randomUUID();
+      await setDoc(doc(collection(db, 'rooms', cleanRoomId(state.settings.roomId), 'tasks'), id), { ...task, id, createdAt: task.createdAt || new Date().toISOString(), serverAt: serverTimestamp() });
+    }
 
-        function closeSettingsOutside(e) {
-            toggleSettings();
-        }
+    async function updateRemoteTask(id, patch) {
+      const { getFirestore, doc, updateDoc, serverTimestamp } = firebaseApi;
+      const db = getFirestore();
+      await updateDoc(doc(db, 'rooms', cleanRoomId(state.settings.roomId), 'tasks', id), { ...patch, serverAt: serverTimestamp() });
+    }
 
-        // 保存设置
-        function saveSettings() {
-            const nicknameVal = document.getElementById('setting-nickname').value.trim() || '宝贝小公主';
-            const lastDateVal = document.getElementById('setting-last-date').value;
-            const cycleVal = parseInt(document.getElementById('setting-cycle').value) || 28;
-            const durationVal = parseInt(document.getElementById('setting-duration').value) || 5;
-            const cloudUrlVal = document.getElementById('setting-cloud-url').value.trim();
+    async function deleteRemoteTask(id) {
+      const { getFirestore, doc, deleteDoc } = firebaseApi;
+      const db = getFirestore();
+      await deleteDoc(doc(db, 'rooms', cleanRoomId(state.settings.roomId), 'tasks', id));
+    }
 
-            if (!lastDateVal) {
-                showToast("⚠️ 请设定上次经期的第一天日期哦");
-                return;
-            }
+    async function copyRoomInfo() {
+      const text = `My Girl 房间 ID：${state.settings.roomId || ''}\n请在设置里填写同一个 Firebase 配置和房间 ID。`;
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast('房间信息已复制');
+      } catch (_) {
+        prompt('复制房间信息', text);
+      }
+    }
 
-            state = {
-                nickname: nicknameVal,
-                lastDate: lastDateVal,
-                cycleLength: cycleVal,
-                periodLength: durationVal,
-                cloudJsonUrl: cloudUrlVal
-            };
+    function parseLocalDate(iso) { if (!iso) return null; const [y,m,d] = iso.split('-').map(Number); return new Date(y, m - 1, d); }
+    function startOfDay(date) { return new Date(date.getFullYear(), date.getMonth(), date.getDate()); }
+    function addDays(date, days) { const d = new Date(date); d.setDate(d.getDate() + days); return d; }
+    function daysBetween(a,b) { return Math.round((startOfDay(b) - startOfDay(a)) / 86400000); }
+    function formatISO(date) { const y = date.getFullYear(); const m = String(date.getMonth()+1).padStart(2,'0'); const d = String(date.getDate()).padStart(2,'0'); return `${y}-${m}-${d}`; }
+    function formatCN(date) { return `${date.getMonth()+1}月${date.getDate()}日`; }
+    function formatDateTime(iso) { if (!iso) return ''; const d = new Date(iso); if (Number.isNaN(d.getTime())) return ''; return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
 
-            localStorage.setItem('my_girl_period_state', JSON.stringify(state));
-            
-            updateUI();
-            fetchCloudMessage();
-            toggleSettings();
-            showToast("💾 专属管家配置已完美存盘！");
-        }
+    function getPeriodInfo() {
+      const p = state.period;
+      const last = parseLocalDate(p.lastDate);
+      if (!last) return null;
+      const today = startOfDay(new Date());
+      let next = new Date(last);
+      while (next < today) next = addDays(next, Number(p.cycleLength) || 28);
+      const prev = addDays(next, -(Number(p.cycleLength) || 28));
+      const dayInCycle = daysBetween(prev, today) + 1;
+      const daysToNext = daysBetween(today, next);
+      const isPeriod = dayInCycle >= 1 && dayInCycle <= (Number(p.duration) || 5);
+      const fertileStart = addDays(prev, (Number(p.cycleLength) || 28) - 19);
+      const fertileEnd = addDays(prev, (Number(p.cycleLength) || 28) - 12);
+      return { last, today, next, prev, dayInCycle, daysToNext, isPeriod, fertileStart, fertileEnd };
+    }
 
-        // 关闭前3天警告
-        function dismissWarning() {
-            document.getElementById('danger-alert-card').classList.add('hidden');
-            showToast("🤫 警报已暂时收起，不过不要碰冷水和偷喝冰的哦！");
-        }
-    </script>
+    function renderPeriod() {
+      const info = getPeriodInfo();
+      const p = state.period;
+      if (!info) return;
+      document.getElementById('periodDays').textContent = info.isPeriod ? `第${info.dayInCycle}天` : info.daysToNext;
+      document.getElementById('periodText').textContent = info.isPeriod ? '当前预计处在姨妈期，好好休息' : '天后预计来姨妈';
+      document.getElementById('nextDate').textContent = formatCN(info.next);
+      document.getElementById('cycleLen').textContent = `${p.cycleLength}天`;
+      document.getElementById('periodLen').textContent = `${p.duration}天`;
+      let phase = '周期记录';
+      if (info.isPeriod) phase = '姨妈期中';
+      else if (info.daysToNext <= Number(p.remindBefore || 3)) phase = '临近提醒';
+      else if (info.today >= info.fertileStart && info.today <= info.fertileEnd) phase = '排卵窗口估算';
+      document.getElementById('periodPhase').textContent = phase;
+      const alertCard = document.getElementById('periodAlertCard');
+      const alertText = document.getElementById('periodAlertText');
+      if (info.isPeriod) {
+        alertCard.style.display = 'block';
+        alertText.textContent = '姨妈期预计进行中：注意保暖、早点睡、把卫生巾和止痛/热敷用品放在顺手的位置。身体异常疼痛或周期长期紊乱时，建议咨询医生。';
+      } else if (info.daysToNext <= Number(p.remindBefore || 3)) {
+        alertCard.style.display = 'block';
+        alertText.textContent = `还有 ${info.daysToNext} 天预计来姨妈：可以提前准备卫生巾、热敷贴、温水杯，也提醒 TA 多照顾你一点。`;
+      } else alertCard.style.display = 'none';
+      const dates = [];
+      let d = new Date(info.next);
+      for (let i = 0; i < 6; i++) { dates.push({ start:new Date(d), end:addDays(d, Number(p.duration || 5) - 1) }); d = addDays(d, Number(p.cycleLength || 28)); }
+      document.getElementById('futureDates').innerHTML = dates.map((item, index) => `
+        <div class="date-item"><div><b>第 ${index + 1} 次</b><div class="small">预计 ${formatCN(item.start)} - ${formatCN(item.end)}</div></div><span class="pill">${formatISO(item.start)}</span></div>`).join('');
+    }
+
+    function fillPeriodForm() {
+      document.getElementById('periodLast').value = state.period.lastDate || '';
+      document.getElementById('periodCycle').value = state.period.cycleLength || 28;
+      document.getElementById('periodDuration').value = state.period.duration || 5;
+      document.getElementById('periodBefore').value = state.period.remindBefore ?? 3;
+    }
+
+    function savePeriod() {
+      const lastDate = document.getElementById('periodLast').value;
+      if (!lastDate) return showToast('请填写上次姨妈第一天');
+      state.period.lastDate = lastDate;
+      state.period.cycleLength = Number(document.getElementById('periodCycle').value) || 28;
+      state.period.duration = Number(document.getElementById('periodDuration').value) || 5;
+      state.period.remindBefore = Number(document.getElementById('periodBefore').value) || 0;
+      saveState(); renderPeriod(); showToast('姨妈提醒已保存');
+    }
+
+    function requestNotify() {
+      if (!('Notification' in window)) return showToast('当前浏览器不支持通知');
+      Notification.requestPermission().then(permission => showToast(permission === 'granted' ? '浏览器提醒已开启' : '你没有授权浏览器提醒'));
+    }
+
+    function checkPeriodNotification() {
+      const info = getPeriodInfo();
+      if (!info || !('Notification' in window) || Notification.permission !== 'granted') return;
+      const today = todayISO();
+      const shouldNotify = info.isPeriod || info.daysToNext <= Number(state.period.remindBefore || 3);
+      if (shouldNotify && state.period.lastNotifyDate !== today) {
+        new Notification('姨妈提醒', { body: info.isPeriod ? '预计姨妈期中，今天也要好好照顾自己。' : `还有 ${info.daysToNext} 天预计来姨妈，记得提前准备。` });
+        state.period.lastNotifyDate = today; saveState();
+      }
+    }
+
+    function fillSettingsForm() {
+      const s = state.settings;
+      document.getElementById('setNickname').value = s.nickname || '';
+      document.getElementById('setPartner').value = s.partnerName || '';
+      document.getElementById('setProxyUrl').value = s.apiProxyUrl || '';
+      document.getElementById('setModel').value = s.deepseekModel || 'deepseek-v4-flash';
+      document.getElementById('setPrompt').value = s.systemPrompt || defaultState.settings.systemPrompt;
+      document.getElementById('setFirebaseConfig').value = s.firebaseConfigText || '';
+      document.getElementById('setRoomId').value = s.roomId || '';
+      document.getElementById('setRole').value = s.myRole || 'me';
+      document.getElementById('setTheme').value = s.theme || 'pink';
+    }
+
+    function saveSettings() {
+      const oldRoom = state.settings.roomId;
+      const oldFirebase = state.settings.firebaseConfigText;
+      state.settings.nickname = document.getElementById('setNickname').value.trim() || '宝贝';
+      state.settings.partnerName = document.getElementById('setPartner').value.trim() || 'TA';
+      state.settings.apiProxyUrl = document.getElementById('setProxyUrl').value.trim();
+      state.settings.deepseekModel = document.getElementById('setModel').value;
+      state.settings.systemPrompt = document.getElementById('setPrompt').value.trim() || defaultState.settings.systemPrompt;
+      state.settings.firebaseConfigText = document.getElementById('setFirebaseConfig').value.trim();
+      state.settings.roomId = cleanRoomId(document.getElementById('setRoomId').value) || defaultState.settings.roomId;
+      state.settings.myRole = document.getElementById('setRole').value;
+      state.settings.theme = document.getElementById('setTheme').value;
+      saveState(); applyTheme(); renderHeader(); renderAIChat(); renderDuoChat(); renderTasks(); renderSyncStatus();
+      document.getElementById('duoWho').value = state.settings.myRole;
+      showToast('设置已保存');
+      if ((oldRoom !== state.settings.roomId || oldFirebase !== state.settings.firebaseConfigText) && state.settings.firebaseConfigText) connectRealtime(false);
+    }
+
+    function exportData() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type:'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `my-girl-backup-${todayISO()}.json`; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function resetAll() {
+      if (!confirm('确定清空全部本地数据吗？这个操作不能恢复。')) return;
+      closeRealtime();
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem('my_girl_v2_state');
+      state = structuredClone(defaultState);
+      pendingImageData = '';
+      init(); showToast('已恢复默认数据');
+    }
+
+    function escapeHtml(text) {
+      return String(text || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    }
+
+    function init() {
+      applyTheme(); renderHeader(); renderAIChat(); renderDuoChat(); renderTasks(); renderPeriod(); fillSettingsForm(); fillPeriodForm(); renderSyncStatus(); checkPeriodNotification();
+      document.getElementById('duoWho').value = state.settings.myRole || 'me';
+      if (state.settings.firebaseConfigText && state.settings.roomId) connectRealtime(false);
+    }
+
+    init();
+  </script>
 </body>
 </html>
