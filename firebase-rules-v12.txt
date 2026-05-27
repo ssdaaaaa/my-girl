@@ -1,0 +1,21 @@
+Firestore Rules（Firebase 控制台 → Firestore Database → Rules）：
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /rooms/{roomId}/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+
+Storage Rules（Firebase 控制台 → Storage → Rules）：
+
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /rooms/{roomId}/images/{fileName} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
